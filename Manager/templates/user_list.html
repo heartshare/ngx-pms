@@ -1,0 +1,86 @@
+<script language="javascript">
+	{% if errmsg %}	
+		alertMsg.error("{{errmsg}}");
+	{% endif %}
+</script>
+<form id="pagerForm" method="get" action="{{url_for('user.home')}}">
+	<input type="hidden" name="pageNum" value="{{pageNum}}" />
+	<input type="hidden" name="numPerPage" value="{{numPerPage}}" />
+	
+</form>
+
+<div class="pageHeader">
+	<form onsubmit="return navTabSearch(this);" action="{{url_for('user.home')}}" method="post" rel="pagerForm">
+	<div class="searchBar">
+		<table class="searchContent">
+			<tr>
+				<td>
+					用户姓名：<input type="text" name="username" value="{{username}}"/>
+				</td>
+				<td>
+					拥有权限：
+				</td>
+				<td>
+					<select class="combox" name="permission">
+						<option value="">所有权限</option>
+						{% for perm in permissions %}
+						<option value="{{perm.id_}}" {% if permission==perm.id_ %} selected="selected" {% endif %}>{{perm.name}}</option>
+						{% endfor %}
+					</select>
+				</td>
+				<!--
+				<td>
+					创建日期：<input type="text" class="date" readonly="true" name="create_time"/>
+				</td>
+				-->
+				<td>
+					<div class="buttonActive">
+					<div class="buttonContent"><button type="submit">搜索</button></div>
+					</div>
+				</td>
+			</tr>
+		</table>
+	</div>
+	</form>
+</div>
+<div class="pageContent">
+	<div class="panelBar">
+		<ul class="toolBar">
+			<li><a class="add" href="{{url_for('user.add')}}" target="dialog" rel="dlg_adduser" height="380" width="480" title="添加用户"><span>添加</span></a></li>
+			<li><a class="delete" href="{{url_for('user.delete')}}?uid={uid}" target="ajaxTodo" title="确定要删除吗?"><span>删除</span></a></li>
+			<li><a class="edit" href="{{url_for('user.add')}}?uid={uid}" target="dialog"  height="330" width="480" title="修改用户"><span>修改</span></a></li>
+			<li class="line">line</li>
+			<li>&nbsp;</li>
+		</ul>
+	</div>
+	<table class="table" width="100%" layoutH="112">
+		<thead>
+			<tr>
+				<th width="40">ID</th>
+				<th width="100">用户名</th>
+				<th width="300">权限</th>
+				<th width="80">创建日期</th>
+			</tr>
+		</thead>
+		<tbody>
+		{% if record_cnt > 0 %}
+		  {% for record in records %}
+			<tr target="uid" rel="{{record.id_}}">
+				<td>{{record.id_}}</td>
+				<td>{{record.username}}</td>
+				<td>{{record.permission}}</td>
+				<td>{{record.create_time}}</td>
+			</tr>
+		  {% endfor %}
+		{% endif %}
+		</tbody>
+	</table>
+	<div class="panelBar">
+		<div class="pages">
+			<span>显示{{numPerPage}}条，共{{totals}}条</span>
+		</div>
+		
+		<div class="pagination" targetType="navTab" totalCount="{{totals}}" numPerPage="{{numPerPage}}" pageNumShown="10" currentPage="{{pageNum}}">&nbsp;</div>
+
+	</div>
+</div>

@@ -1,0 +1,72 @@
+<script language="javascript">
+	{% if errmsg %}	
+		alertMsg.error("{{errmsg}}");
+	{% endif %}
+</script>
+<form id="pagerForm" method="get" action="{{url_for('perm.home')}}">
+	<input type="hidden" name="pageNum" value="{{pageNum}}" />
+	<input type="hidden" name="numPerPage" value="{{numPerPage}}" />
+</form>
+
+<div class="pageHeader">
+	<form onsubmit="return navTabSearch(this);" action="{{url_for('perm.home')}}" method="post" rel="pagerForm">
+	<div class="searchBar">
+		<table class="searchContent">
+			<tr>
+				<td>
+					权限ID：<input type="text" name="permission" value="{{permission}}"/>
+				</td>
+				<td>
+					权限名称：<input type="text" name="permname" value="{{permname}}"/>
+				</td>
+				<td>
+					<div class="buttonActive">
+					<div class="buttonContent"><button type="submit">搜索</button></div>
+					</div>
+				</td>
+			</tr>
+		</table>
+	</div>
+	</form>
+</div>
+<div class="pageContent">
+	<div class="panelBar">
+		<ul class="toolBar">
+			<li><a class="add" href="{{url_for('perm.add')}}" target="dialog" rel="dlg_addperm" width="480" title="添加权限"><span>添加</span></a></li>
+			<li><a class="delete" href="{{url_for('perm.delete')}}?pid={pid}" target="ajaxTodo" title="确定要删除吗?"><span>删除</span></a></li>
+			<li><a class="edit" href="{{url_for('perm.add')}}?pid={pid}" target="dialog" width="480" title="修改权限"><span>修改</span></a></li>
+			<li class="line">line</li>
+			<li>&nbsp;</li>
+		</ul>
+	</div>
+	<table class="table" width="100%" layoutH="112">
+		<thead>
+			<tr>
+				<th width="80">ID</th>
+				<th width="120">权限名</th>
+				<th width="200">说明</th>
+				<th width="80">创建日期</th>
+			</tr>
+		</thead>
+		<tbody>
+		{% if record_cnt > 0 %}
+		  {% for record in records %}
+			<tr target="pid" rel="{{record.id_}}">
+				<td>{{record.id_}}</td>
+				<td>{{record.name}}</td>
+				<td>{{record.remark}}</td>
+				<td>{{record.create_time}}</td>
+			</tr>
+		  {% endfor %}
+		{% endif %}
+		</tbody>
+	</table>
+	<div class="panelBar">
+		<div class="pages">
+			<span>显示{{numPerPage}}条，共{{totals}}条</span>
+		</div>
+		
+		<div class="pagination" targetType="navTab" totalCount="{{totals}}" numPerPage="{{numPerPage}}" pageNumShown="10" currentPage="{{pageNum}}">&nbsp;</div>
+
+	</div>
+</div>
