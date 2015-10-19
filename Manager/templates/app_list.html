@@ -1,0 +1,62 @@
+<script language="javascript">
+	{% if errmsg then %}	
+		alertMsg.error("{{errmsg}}");
+	{% end %}
+</script>
+
+<form id="pagerForm" method="get" action="/app/list">
+	<input type="hidden" name="pageNum" value="{{pageNum}}" />
+	<input type="hidden" name="numPerPage" value="{{numPerPage}}" />
+</form>
+
+<div class="pageHeader">
+	<form onsubmit="return navTabSearch(this);" action="/app/list" method="post" rel="pagerForm">
+	<div class="searchBar">
+		<table class="searchContent">
+			<tr height="30">
+				<td width="100%">
+					&nbsp;
+				</td>
+			</tr>
+		</table>
+	</div>
+	</form>
+</div>
+
+<div class="pageContent">
+	<div class="panelBar">
+		<ul class="toolBar">
+			<li><a class="add" href="/app/add" target="dialog" rel="dlg_addurl" weight="420" height="360" title="添加应用"><span>添加</span></a></li>
+			<li><a class="delete" href="/app/del?url_id={url_id}" target="ajaxTodo" title="确定要删除吗?"><span>删除</span></a></li>
+			<li><a class="edit" href="/app/add?url_id={url_id}" target="dialog" width="420" title="修改应用"><span>修改</span></a></li>			
+		</ul>
+	</div>
+	<table class="table" width="100%" layoutH="112">
+		<thead>
+			<tr>
+				<th width="120">应用ID</th>
+				<th width="60">应用名称</th>
+				<th width="200">备注说明</th>
+			</tr>
+		</thead>
+		<tbody>
+		{% if apps then %}
+		  {% for i, record in ipairs(apps) do %}
+			<tr target="url_id" rel="{{record.app}}">
+				<td>{{record.app}}</td>
+				<td>{{record.appname}}</td>
+				<td>{{record.remark}}</td>
+			</tr>
+		  {% end %}
+		{% end %}
+		</tbody>
+	</table>
+	<div class="panelBar">
+		<div class="pages">
+			<span>显示{{numPerPage}}条，共{{totals}}条</span>
+		</div>
+		
+		<div class="pagination" targetType="navTab" totalCount="{{totals}}" numPerPage="{{numPerPage}}" pageNumShown="10" currentPage="{{pageNum}}">&nbsp;</div>
+
+	</div>
+</div>

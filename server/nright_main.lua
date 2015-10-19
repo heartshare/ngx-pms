@@ -4,6 +4,7 @@ local ck = require('util.cookie')
 local dao = require("dao.dao")
 local config = require("config")
 local r = require "server.res"
+local error = require('dao.error')
 
 local tmpl_caching = config.tmpl_caching
 if tmpl_caching == nil then
@@ -67,7 +68,7 @@ local function login_post()
 
 	local ok, userinfo = dao.user_get_by_username(username)
 	if not ok then
-		if userinfo == "not-exist" then
+		if userinfo == error.err_data_not_exist then
 			args["error_info"] = r.ERR_USER_NOT_EXIST
 			login_render(args)
 		else 
@@ -108,7 +109,7 @@ local function get_user_by_cookie(cookie)
 	end
 	local ok, userinfo = dao.user_get_by_id(id)
 	if not ok then
-		if userinfo == "not-exist" then
+		if userinfo == error.err_data_not_exist then
 			ngx.log(ngx.WARN, "dao.user_get_by_id(", id, ",", username, ") failed! err:", tostring(userinfo))
 		else
 			ngx.log(ngx.ERR, "dao.user_get_by_id(", id, ",", username, ") failed! err:", tostring(userinfo))
@@ -146,7 +147,7 @@ local function right_check()
 
 	local ok, userinfo = get_user_by_cookie(cookie)
 	if not ok then
-		if userinfo == "not-exist" then
+		if userinfo == error.err_data_not_exist then
 			ngx.exit(ngx.HTTP_BAD_REQUEST)
 		else
 			ngx.exit(ngx.HTTP_INTERNAL_SERVER_ERROR)
@@ -166,7 +167,7 @@ local function right_check()
 			ngx.exit(ngx.HTTP_UNAUTHORIZED)
 		end
 	else 
-		if url_permission == 'not-exist' then
+		if url_permission == error.err_data_not_exist then
 			ngx.log(ngx.INFO, "user [", username, "] check right for uri [", uri, "] ok, uri not exist!")
 			ngx.exit(ngx.HTTP_OK)
 		else

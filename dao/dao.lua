@@ -8,16 +8,39 @@ local util = require("util.util")
 local config = require(config_name or "config")
 local cjson = require "cjson"
 local basedao = require "dao.basedao"
+local error = require('dao.error')
 
 local _M = {}
 _M.db_inited = false
-_M.err_dblock = "ERR.DATABASE_LOCKED"
-_M.err_dbuninit = "ERR.DATABASE_NOT_INITED"
-_M.err_sql = "ERR.SQL_EXEC_ERR"
 
-local user_dao = basedao:new("user", {'id', 'username', 'email', 'password', 'role_id', 'permission'})
-local role_dao = basedao:new("role", {'id', 'name', 'remark', 'permission'})
-local url_perm_dao = basedao:new("url_perm", {'id', 'app', 'type', 'url', 'url_len', 'permission'})
+local user_dao = basedao:new("user", 
+                   {id='number', 
+                    username='string', 
+                    email='string', 
+                    tel='string', 
+                    password='string', 
+                    app='string', 
+                    role_id='string', 
+                    permission='string',
+                    create_time='number',
+                    update_time='number'})
+local role_dao = basedao:new("role", 
+                   {id='string', 
+                    name='string', 
+                    remark='string', 
+                    app='string', 
+                    permission='string',
+                    create_time='number',
+                    update_time='number'})
+local url_perm_dao = basedao:new("url_perm", 
+                   {id='number', 
+                    app='string', 
+                    type='string', 
+                    url='string', 
+                    url_len='number', 
+                    permission='string',
+                    create_time='number',
+                    update_time='number'})
 
 function _M.init_db()   
     _M.db_inited = true
@@ -27,7 +50,7 @@ end
 function _M.role_get_by_id(id)
     if not _M.db_inited and not _M.init_db() then 
         ngx.log(ngx.ERR, "user_get failed! database not inited!")
-        return false, _M.err_dbuninit
+        return false, error.err_dbuninit
     end
     id = ngx.quote_sql_str(id)
     local ok, obj = role_dao:select_by("where id=" .. tostring(id))
@@ -43,67 +66,10 @@ function _M.role_get_by_id(id)
     return ok, obj
 end
 
-local function _user_get_internal(id, username)
-    if not _M.db_inited and not _M.init_db() then 
-        ngx.log(ngx.ERR, "user_get failed! database not inited!")
-        return false, _M.err_dbuninit
-    end
-    local ok, obj 
-    if id then
-        id = tonumber(id)
-        ok, obj = user_dao:select_by("where id=" .. tostring(id))
-    elseif username then
-        username = ngx.quote_sql_str(username)
-        ok, obj = user_dao:select_by("where username=" .. username)
-    else
-        ngx.log(ngx.ERR, "_user_get_internal failed! args 'id','username' missing!")
-        return false, "not-exist"
-    end
-    
-    if not ok then
-        return  ok, obj
-    end
-
-    local permissions = nil
-    ngx.log(ngx.INFO, "user.permission: ", tostring(obj.permission))
-
-    if obj.permission then
-        permissions = util.split(obj.permission, "|")
-    end
-
-    local role_permissions = nil
-    if obj.role_id then
-        local ok, role = _M.role_get_by_id(obj.role_id)
-        if not ok then
-            ngx.log(ngx.ERR, "role_get_by_id(", obj.role_id, ") failed! err:", tostring(role))
-        else 
-            if role.permissions and type(role.permissions) == 'table' then
-                role_permissions = role.permissions
-            end
-        end
-    end
-    obj.permissions = util.merge_array_as_map(permissions, role_permissions)
-    --[[
-    ngx.log(ngx.INFO, "------------------------------------")
-    for k, v in pairs(obj.permissions) do
-        ngx.log(ngx.INFO, "---- ", k)
-    end
-    ]]
-    return  ok, obj
-end
-
-function _M.user_get_by_username(username)
-    return _user_get_internal(nil, username)
-end
-
-function _M.user_get_by_id(userid)
-   return _user_get_internal(userid) 
-end
-
 function _M.url_perm_get(app, url)
     if not _M.db_inited and not _M.init_db() then 
         ngx.log(ngx.ERR, "url_perm_get failed! database not inited!")
-        return false, _M.err_dbuninit
+        return false, error.err_dbuninit
     end
 
     app = ngx.quote_sql_str(app)
@@ -123,7 +89,7 @@ function _M.url_perm_get(app, url)
         ok, obj = url_perm_dao:select_by(where)
         if ok then
             return ok, obj
-        elseif obj ~= "not-exist" then --出错
+        elseif obj ~= error.err_data_not_exist then --出错
             ngx.log(ngx.ERR, "url_perm_dao.select_by(" .. tostring(where) .. ") failed! err:", tostring(obj))
             return ok, obj
         end

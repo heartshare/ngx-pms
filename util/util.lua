@@ -274,4 +274,31 @@ function _M.make_pwd(password)
     return ngx.md5(pwd_str)
 end
 
+local function init_pwd_tables()
+    local pwd_tables = {}
+    for i=string.byte('a'),string.byte('z') do
+        table.insert(pwd_tables,string.char(i))
+    end
+    for i=string.byte('A'),string.byte('Z') do
+        table.insert(pwd_tables,string.char(i))
+    end
+    for i=string.byte('0'),string.byte('9') do
+        table.insert(pwd_tables,string.char(i))
+    end
+    table.insert(pwd_tables, "!@#$%^&*")
+    return table.concat(pwd_tables, "")
+end
+
+_M.pwd_tables = init_pwd_tables()
+
+function _M.random_pwd(length)
+    length = length or 10
+    local t = {}
+    for i = 1,length do
+        local idx = math.random(#_M.pwd_tables)
+        table.insert(t, _M.pwd_tables[idx])
+    end
+    return table.concat(t, "")
+end
+
 return _M
