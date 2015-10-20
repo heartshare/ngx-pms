@@ -3,7 +3,7 @@ local util = require("util.util")
 local ck = require('util.cookie')
 local dao = require("dao.dao")
 local config = require("config")
-local r = require "server.res"
+local r = require "util.res"
 local error = require('dao.error')
 
 local tmpl_caching = config.tmpl_caching
@@ -26,24 +26,6 @@ local function login_page()
 	login_render(args)
 end
 
-local function set_cookie(key, value, domain, path, expires)
-	--"%s=%s;domain=%s;path=%s;expires=%s"
-	local cookie_value = tostring(key) .. "=" .. tostring(value)
-	if domain then
-		cookie_value = cookie_value .. ";domain=" .. domain
-	end
-	if path == nil then
-		path = "/"
-	end
-	cookie_value = cookie_value .. ";path=" .. path
-	
-	if expires then
-		local expires_time = ngx.cookie_time(ngx.time() + expires)
-		cookie_value = cookie_value .. ";expires=" .. expires_time
-	end
-	ngx.header['Set-Cookie'] = cookie_value
-	ngx.log(ngx.INFO, "******* Set-Cookie:", cookie_value)
-end
 
 local function login_post()
 	ngx.header['Content-Type'] = "text/html"
@@ -85,19 +67,13 @@ local function login_post()
 		end
 
 		local cookie = ck.make_cookie(userinfo)
-		local cookie_config = config.cookie_config
-		if cookie_config then
-			set_cookie(cookie_config.key, cookie, cookie_config.domain, cookie_config.path, cookie_config.expires)
-		end
+		ck.set_cookie(cookie)
 		util.redirect(uri)
 	end
 end
 
 local function logout_post()
-	local cookie_config = config.cookie_config
-	if cookie_config then
-		set_cookie(cookie_config.key, "logouted", cookie_config.domain, cookie_config.path, 1)
-	end
+	ck.set_cookie("logouted")
 	util.redirect("/nright/login")
 end
 

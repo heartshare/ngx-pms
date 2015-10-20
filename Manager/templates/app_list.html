@@ -26,9 +26,10 @@
 <div class="pageContent">
 	<div class="panelBar">
 		<ul class="toolBar">
-			<li><a class="add" href="/app/add" target="dialog" rel="dlg_addurl" weight="420" height="360" title="添加应用"><span>添加</span></a></li>
-			<li><a class="delete" href="/app/del?url_id={url_id}" target="ajaxTodo" title="确定要删除吗?"><span>删除</span></a></li>
-			<li><a class="edit" href="/app/add?url_id={url_id}" target="dialog" width="420" title="修改应用"><span>修改</span></a></li>			
+			<li><a class="add" href="/app/add" target="dialog" rel="dlg_addurl" width="480" height="350" title="添加应用"><span>添加</span></a></li>
+			<!--		
+			<li><a class="edit" href="/app/modify?app={app}" target="dialog" width="480" height="350" title="修改应用"><span>修改</span></a></li>
+		-->
 		</ul>
 	</div>
 	<table class="table" width="100%" layoutH="112">
@@ -42,7 +43,7 @@
 		<tbody>
 		{% if apps then %}
 		  {% for i, record in ipairs(apps) do %}
-			<tr target="url_id" rel="{{record.app}}">
+			<tr target="app" rel="{{record.app}}">
 				<td>{{record.app}}</td>
 				<td>{{record.appname}}</td>
 				<td>{{record.remark}}</td>

@@ -53,7 +53,7 @@ function _M.role_get_by_id(id)
         return false, error.err_dbuninit
     end
     id = ngx.quote_sql_str(id)
-    local ok, obj = role_dao:select_by("where id=" .. tostring(id))
+    local ok, obj = role_dao:get_by("where id=" .. tostring(id))
     if not ok then
         return  ok, obj
     end
@@ -86,16 +86,16 @@ function _M.url_perm_get(app, url)
     local ok, obj, where_ = nil,nil
     for i, where in ipairs(wheres) do
         where_ = where
-        ok, obj = url_perm_dao:select_by(where)
+        ok, obj = url_perm_dao:get_by(where)
         if ok then
             return ok, obj
         elseif obj ~= error.err_data_not_exist then --出错
-            ngx.log(ngx.ERR, "url_perm_dao.select_by(" .. tostring(where) .. ") failed! err:", tostring(obj))
+            ngx.log(ngx.ERR, "url_perm_dao.get_by(" .. tostring(where) .. ") failed! err:", tostring(obj))
             return ok, obj
         end
     end
     if not ok then
-        ngx.log(ngx.ERR, "url_perm_dao.select_by(" .. tostring(where_) .. ") failed! err:", tostring(obj))
+        ngx.log(ngx.ERR, "url_perm_dao.get_by(" .. tostring(where_) .. ") failed! err:", tostring(obj))
     end
     return ok, obj
 end

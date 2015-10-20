@@ -36,5 +36,5 @@ _M.db = {host="192.168.1.111", port=3306,user="root", password="123456",
 		database="nright",DEFAULT_CHARSET="utf8"}
 
 -- 列表显示时，默认分页大小
-_M.defNumPerPage = 10
+_M.defNumPerPage = 2
 return _M

@@ -40,4 +40,36 @@ function _M.get_cookie()
 	return cookie_value
 end
 
+function _M.set_cookie(value)
+	--"%s=%s;domain=%s;path=%s;expires=%s"
+	if config.cookie_config == nil then
+		return false
+	end
+    local key = "nright"
+    if config.cookie_config and config.cookie_config.key then
+    	key = config.cookie_config.key
+    end
+
+	local domain = config.cookie_config.domain
+	local path = config.cookie_config.path
+	local expires = config.cookie_config.expires
+
+	local cookie_value = tostring(key) .. "=" .. tostring(value)
+	if domain then
+		cookie_value = cookie_value .. ";domain=" .. domain
+	end
+	if path == nil then
+		path = "/"
+	end
+	cookie_value = cookie_value .. ";path=" .. path
+	
+	if expires then
+		local expires_time = ngx.cookie_time(ngx.time() + expires)
+		cookie_value = cookie_value .. ";expires=" .. expires_time
+	end
+	ngx.header['Set-Cookie'] = cookie_value
+	ngx.log(ngx.INFO, "******* Set-Cookie:", cookie_value)
+	return true
+end
+
 return _M

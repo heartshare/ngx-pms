@@ -286,7 +286,7 @@ local function init_pwd_tables()
         table.insert(pwd_tables,string.char(i))
     end
     table.insert(pwd_tables, "!@#$%^&*")
-    return table.concat(pwd_tables, "")
+    return pwd_tables
 end
 
 _M.pwd_tables = init_pwd_tables()
@@ -298,7 +298,7 @@ function _M.random_pwd(length)
         local idx = math.random(#_M.pwd_tables)
         table.insert(t, _M.pwd_tables[idx])
     end
-    return table.concat(t, "")
+    return table.concat(t)
 end
 
 return _M

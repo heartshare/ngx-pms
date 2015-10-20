@@ -14,15 +14,32 @@ local _M = {}
 local function get_select_sql(tablename, table_meta)
     local sql_select = {}
 
-    table.insert(sql_select, "select ")
+    table.insert(sql_select, "SELECT ")
 
     for k,v in pairs(table_meta) do
         table.insert(sql_select, k)
         table.insert(sql_select, ",")
     end
     table.remove(sql_select)
-    table.insert(sql_select, " from " .. tablename)
+    table.insert(sql_select, " FROM " .. tablename)
     return table.concat(sql_select);
+end
+
+local function get_sql_value(v, type_)
+    if type_ == 'string' then
+        return ngx.quote_sql_str(v)
+    elseif type_ == 'datetime' then
+        return "from_unixtime(" .. v .. ")"
+    else
+        if type(v) == 'boolean' then
+            if v then 
+                v = 1
+            else 
+                v = 0 
+            end
+        end
+        return v
+    end
 end
 
 local function get_insert_or_replace_sql(tablename, table_meta, obj, operate)
@@ -33,35 +50,8 @@ local function get_insert_or_replace_sql(tablename, table_meta, obj, operate)
     for k,v in pairs(obj) do
         table.insert(sql_insert, k)
         table.insert(sql_insert, ",")
-        if table_meta == nil or table_meta[k] == nil then
-            if type(v) == 'string' then
-                table.insert(sql_values, "'" .. v .. "'")
-            else
-                if type(v) == 'boolean' then
-                    if v then 
-                        v = 1
-                    else 
-                        v = 0 
-                    end
-                end
-                table.insert(sql_values, v)
-            end
-        else
-            if table_meta[k] == 'string' then
-                table.insert(sql_values, "'" .. v .. "'")
-            elseif table_meta[k] == 'datetime' then
-                table.insert(sql_values, "from_unixtime(" .. v .. ")")
-            else
-                if type(v) == 'boolean' then
-                    if v then 
-                        v = 1
-                    else 
-                        v = 0 
-                    end
-                end
-                table.insert(sql_values, v)
-            end
-        end
+        
+        table.insert(sql_values, get_sql_value(v, table_meta[k]))       
         table.insert(sql_values, ",")
     end
     table.remove(sql_insert)
@@ -79,6 +69,31 @@ local function get_replace_sql(tablename, table_meta, obj)
     return get_insert_or_replace_sql(tablename, table_meta, obj, "replace")
 end
 
+local function get_update_sql(tablename, table_meta, obj, update_by)
+    local sql_update = {}
+    table.insert(sql_update, "UPDATE " .. tablename .. " ")
+    table.insert(sql_update, "SET ")
+    for k,v in pairs(obj) do
+        table.insert(sql_update, k)
+        table.insert(sql_update, "=")
+        
+        table.insert(sql_update, get_sql_value(v, table_meta[k]))
+        table.insert(sql_update, ",")
+    end
+    table.remove(sql_update)
+
+    table.insert(sql_update, " WHERE ")
+    for k,v in pairs(update_by) do
+        table.insert(sql_update, k)
+        table.insert(sql_update, "=")
+        
+        table.insert(sql_update, get_sql_value(v, table_meta[k])) 
+        table.insert(sql_update, " and ")
+    end
+    table.remove(sql_update)
+
+    return table.concat(sql_update) 
+end
 
 local mt = { __index = _M }
 
@@ -91,7 +106,7 @@ function _M:new(tablename, table_meta, connection)
                 sql_select=sql_select, sql_count=sql_count}, mt)
 end
 
-function _M:select_by(where)
+function _M:get_by(where)
     local sql = self.sql_select
     if where then
         sql = sql .. " " .. where
@@ -111,7 +126,7 @@ function _M:select_by(where)
     return  true, result
 end
 
-function _M:list_by(where, limit, offset)
+function _M.list_by(self, where, limit, offset)
     local sql = self.sql_select
     if where then
         sql = sql .. " " .. where
@@ -134,6 +149,17 @@ function _M:list_by(where, limit, offset)
     end
 
     return  true, res
+end
+
+function _M:list(where, page, page_size)
+    page = page or 1
+    page_size = page_size or 10
+    local limit = page_size
+    local offset = nil
+    if page > 1 then
+        offset = (page-1)*page_size
+    end
+    return _M.list_by(self, where, limit, offset)
 end
 
 function _M:count_by(where)
@@ -184,6 +210,16 @@ end
 
 function _M:saveOrUpdate(values)
     local sql = get_replace_sql(self.tablename, self.table_meta, values)
+    local effects, err = mysql_util.execute(sql, self.connection)
+    if effects == -1 then
+        ngx.log(ngx.ERR, "execute [", sql, "] failed! err:", tostring(err))
+        return false
+    end
+    return true
+end
+
+function _M:update(values, update_by_values)
+    local sql = get_update_sql(self.tablename, self.table_meta, values, update_by_values)
     local effects, err = mysql_util.execute(sql, self.connection)
     if effects == -1 then
         ngx.log(ngx.ERR, "execute [", sql, "] failed! err:", tostring(err))

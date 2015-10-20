@@ -8,16 +8,14 @@ local util = require("util.util")
 local json = require("util.json")
 local config = require("config")
 local basedao = require "dao.basedao"
+local roledao = require("dao.role_dao")
 local error = require('dao.error')
 
 local _M = {}
 
-
 local mt = { __index = _M }
 
-
-
-function _M.new(self, connection)
+function _M:new(connection)
     local dao = basedao:new("user", 
                    {id='number', 
                     username='string', 
@@ -25,6 +23,7 @@ function _M.new(self, connection)
                     tel='string', 
                     password='string', 
                     app='string', 
+                    manager='string',
                     role_id='string', 
                     permission='string',
                     create_time='number',
@@ -33,30 +32,37 @@ function _M.new(self, connection)
     return setmetatable({ dao = dao}, mt)
 end
 
-function _M.list(self, page, page_size)    
-    page = page or 1
-    page_size = page_size or 10
-    local limit = page_size
-    local offset = nil
-    if page > 1 then
-        offset = (page-1)*page_size
+local function get_where_sql(args)
+    if args == nil then
+        return nil
     end
-
-    local ok, obj = self.dao:list_by(nil, limit, offset)
-    if not ok then
-        return  ok, obj
+    local fields = {}
+    if args.username then
+        table.insert(fields, "username LIKE " .. ngx.quote_sql_str("%" .. args.username .. "%"))
     end
-    
-    return ok, obj
+    if args.email then
+        table.insert(fields, "email LIKE " .. ngx.quote_sql_str("%" .. args.email .. "%"))
+    end
+    if args.tel then
+        table.insert(fields, "tel LIKE " .. ngx.quote_sql_str("%" .. args.tel .. "%"))
+    end
+    if #fields == 0 then
+        return nil
+    end
+    return "WHERE " .. table.concat(fields, " AND ")
 end
 
-function _M.count(self)
-    local ok, obj = self.dao:count_by(nil)
-    
-    return ok, obj
+function _M:list(args, page, page_size)   
+    local sql_where = get_where_sql(args)
+    return self.dao:list(sql_where, page, page_size)
 end
 
-function _M.save(self, values)
+function _M:count(args)
+    local sql_where = get_where_sql(args)
+    return self.dao:count_by(sql_where)
+end
+
+function _M:save(values)
     return self.dao:save(values)
 end
 
@@ -68,10 +74,10 @@ function _user_get_internal(dao, id, username)
     local ok, obj 
     if id then
         id = tonumber(id)
-        ok, obj = dao:select_by("where id=" .. tostring(id))
+        ok, obj = dao:get_by("where id=" .. tostring(id))
     elseif username then
         username = ngx.quote_sql_str(username)
-        ok, obj = dao:select_by("where username=" .. username)
+        ok, obj = dao:get_by("where username=" .. username)
     else
         ngx.log(ngx.ERR, "_user_get_internal failed! args 'id','username' missing!")
         return false, error.err_data_not_exist
@@ -89,11 +95,11 @@ function _user_get_internal(dao, id, username)
     end
 
     local role_permissions = nil
-    if obj.role_id then
-        --TODO: role_get_by_id 修改
-        local ok, role = _M.role_get_by_id(obj.role_id)
+    if obj.role_id and obj.role_id ~= "" then
+        local rdao = roledao:new()
+        local ok, role = rdao:get_by_id(obj.role_id)
         if not ok then
-            ngx.log(ngx.ERR, "role_get_by_id(", obj.role_id, ") failed! err:", tostring(role))
+            ngx.log(ngx.ERR, "roledao:get_by_id(", obj.role_id, ") failed! err:", tostring(role))
         else 
             if role.permissions and type(role.permissions) == 'table' then
                 role_permissions = role.permissions
@@ -101,6 +107,9 @@ function _user_get_internal(dao, id, username)
         end
     end
     obj.permissions = util.merge_array_as_map(permissions, role_permissions)
+    obj.user_permissions = permissions 
+    obj.role_permissions = role_permissions
+    
     --[[
     ngx.log(ngx.INFO, "------------------------------------")
     for k, v in pairs(obj.permissions) do
@@ -110,12 +119,15 @@ function _user_get_internal(dao, id, username)
     return  ok, obj
 end
 
-function _M.get_by_name(self, username)
+function _M:get_by_name(username)
     return _user_get_internal(self.dao, nil, username)
 end
 
-function _M.get_by_id(self, userid)
+function _M:get_by_id(userid)
    return _user_get_internal(self.dao, userid) 
 end
 
+function _M:change_pwd(userid, password)
+    return self.dao:update({password=password}, {id=userid})
+end
 return  _M

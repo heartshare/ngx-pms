@@ -15,9 +15,14 @@ local _M = {}
 local mt = { __index = _M }
 
 function _M:new(connection)
-    local dao = basedao:new("application", 
-        {app='string', appname='string', remark='string', 
-        create_time='number', update_time='number'}, connection)
+    local dao = basedao:new("role", 
+                   {id='string', 
+                    name='string', 
+                    remark='string', 
+                    app='string', 
+                    permission='string',
+                    create_time='number',
+                    update_time='number'},connection)
 
     return setmetatable({ dao = dao}, mt)
 end
@@ -37,6 +42,21 @@ end
 
 function _M:exist(field, value)
     return self.dao:exist(field, value)
+end
+
+function _M:get_by_id(id)
+	id = ngx.quote_sql_str(id)
+    local ok, obj = self.dao:get_by("where id=" .. tostring(id))
+    if not ok then
+        return  ok, obj
+    end
+    local permissions = {}
+    if obj.permission then
+        permissions = util.split(obj.permission, "|")
+    end
+    obj.permissions = permissions
+
+    return ok, obj
 end
 
 return  _M
