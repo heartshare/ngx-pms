@@ -102,8 +102,9 @@ function _M:new(tablename, table_meta, connection)
     --local sql_insert = "insert into " .. tablename .. "(" .. table.concat(table_meta, ",") .. ")"
     local sql_select = get_select_sql(tablename, table_meta)
     local sql_count = "SELECT COUNT(*) as c FROM " .. tablename
+    local sql_delete = "DELETE FROM " .. tablename
     return setmetatable({ tablename = tablename, table_meta = table_meta, connection=connection, 
-                sql_select=sql_select, sql_count=sql_count}, mt)
+                sql_select=sql_select, sql_count=sql_count, sql_delete=sql_delete}, mt)
 end
 
 function _M:get_by(where)
@@ -226,6 +227,27 @@ function _M:update(values, update_by_values)
         return false
     end
     return true
+end
+
+function _M:delete_by(where)
+    local sql = self.sql_delete
+    if where then
+        sql = sql .. " " .. where
+    end
+    
+    ngx.log(ngx.INFO, "sql is:", sql)
+    local res, err = mysql_util.query(sql, self.connection)
+    if not res then
+        return  false, err
+    end
+
+    if res.affected_rows == 0 then
+        return  false, error.err_data_not_exist
+    end
+
+    ngx.log(ngx.INFO, "---[", json.dumps(res), "]---")
+
+    return  true, tonumber(res.affected_rows)
 end
 
 return _M

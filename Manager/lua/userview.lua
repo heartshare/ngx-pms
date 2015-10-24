@@ -7,6 +7,8 @@ local template = require "resty.template"
 local config = require("config")
 local userdao = require('dao.user_dao')
 local permdao = require('dao.perm_dao')
+local appdao = require("dao.app_dao")
+local roledao = require("dao.role_dao")
 local mysql = require("dao.mysql_util")
 local json = require("util.json")
 local dwz = require("Manager.lua.dwzutil")
@@ -63,13 +65,146 @@ end
 function _M.add_render()
 	ngx.req.read_body()
     local args, err = ngx.req.get_post_args()
-	local id = tonumber(args.id)
+	-- local id = tonumber(args.id)
+    local userinfo = ngx.ctx.userinfo
+    local app = nil
+    local app_ok, apps = nil
+    if userinfo.manager == "super" then
+        --可选择多个应用。
+        local dao = appdao:new()
+        app_ok, apps = dao:list(1, 1024)
+        if not app_ok then
+            ngx.log(ngx.ERR, "appdao:list() failed! err:", tostring(apps))
+            apps = {}
+        end
+    else
+        app = userinfo.app
+        apps = {userinfo.app}
+    end
+
 	local dao = permdao:new()
-    local perm_ok, permissions = dao:list(app)
+    local perm_ok, permissions = dao:list(app, 1, 1024)
+    if not perm_ok then
+        if perm_ok == error.err_data_not_exist then
+
+        else
+            ngx.log(ngx.ERR, "permdao:list(", tostring(app), ") failed! err:", tostring(permissions))
+        end
+        permissions = {}
+    end
+
+    local dao = roledao:new()
+    local role_ok, roles = dao:list(app, 1, 1024)
+    if not role_ok then
+        if role_ok == error.err_data_not_exist then
+
+        else
+            ngx.log(ngx.ERR, "roledao:list(", tostring(roles), ") failed! err:", tostring(roles))
+        end
+        roles = {}
+    end
 
 	template.caching(tmpl_caching)
-	template.render("user_add.html", {app=app,appname=appname,remark=remark})
+	template.render("user_add.html", {permission_others=permissions, apps=apps, roles=roles})
 	ngx.exit(0)
+end
+
+function _M.add_post()
+	ngx.req.read_body()
+    local args, err = ngx.req.get_post_args()
+
+    local username = args.username
+    local email = args.email
+    local tel = args.tel 
+    local app = args.app
+    local password = util.random_pwd(16)
+    local manager = args.manager or ""
+    local role_id = args.role_id or ""
+    local permission = args.permission or {}
+    local create_time = ngx.time()
+    local update_time = ngx.time()
+
+    ngx.log(ngx.ERR, "---[", json.dumps(args), "]---")
+    if type(permission) == 'table' then
+        permission = table.concat(permission, "|")
+    end
+    local userinfo = {username=username, email=email, tel=tel,password=password,
+    					app=app,manager=manager,role_id=role_id,permission=permission,
+    					create_time=create_time,update_time=update_time}
+    
+    -- 检查用户是否存在
+    local dao = userdao:new()
+    local ok, exist = dao:exist("username", username)
+    if ok and exist then
+        ngx.say(dwz.cons_resp(300, "保存用户信息时出错了, 用户名[" .. username .. "]已经存在!"))
+        ngx.exit(0)
+    end
+    local ok, exist = dao:exist("email", email)
+    if ok and exist then
+        ngx.say(dwz.cons_resp(300, "保存用户信息时出错了, EMAIL[" .. email .. "]已经存在!"))
+        ngx.exit(0)
+    end
+    local ok, exist = dao:exist("tel", tel)
+    if ok and exist then
+        ngx.say(dwz.cons_resp(300, "保存用户信息时出错了, TEL[" .. tel .. "]已经存在!"))
+        ngx.exit(0)
+    end
+
+    local dao = userdao:new()
+    local ok, err = dao:save(userinfo)
+    if not ok then
+    	ngx.log(ngx.ERR, "userdao:save(", json.dumps(userinfo, ") failed! err:", tostring(err)))
+    	
+    	if err == error.err_data_exist then
+            ngx.say(dwz.cons_resp(300, "保存用户信息时出错了: 数据重复"))
+        else
+           ngx.say(dwz.cons_resp(300, "保存用户信息时出错了:" .. tostring(err)))
+        end    	
+    	ngx.exit(0)
+    end
+   
+    --TODO: 密码提示框会小时问题修改。
+	ngx.say(dwz.cons_resp(200, "用户【" .. username .. "】添加成功: \n用户名：" 
+					.. username .. "\n密码：" .. password, {navTabId="user_list"}))
+end
+
+function _M.del_post()
+    local args = ngx.req.get_uri_args()
+
+    local id = tonumber(args.id)
+    if not id then
+        ngx.say(dwz.cons_resp(300, "删除用户信息时出错了, 缺少用户ID!"))
+        ngx.exit(0)
+    end
+    -- 检查用户是否存在
+    local dao = userdao:new()
+    local ok, userinfo = dao:get_by_id(id)
+    if not ok then
+        ngx.say(dwz.cons_resp(300, "删除用户信息时出错了，错误：" .. tostring(userinfo)))
+        ngx.exit(0)
+    end 
+    if userinfo.manager == "super" then
+        ngx.say(dwz.cons_resp(300, "超级管理员不能删除！"))
+        ngx.exit(0)
+    elseif userinfo.manager == "admin" then
+        ngx.say(dwz.cons_resp(300, "管理员用户不能删除！"))
+        ngx.exit(0)
+    end
+
+    local ok, err = dao:delete_by_id(id)
+    if not ok then
+        ngx.log(ngx.ERR, "dao:delete_by_id(", tostring(id), ") failed! err:", tostring(err))
+        
+        if err == error.err_data_exist then
+            ngx.say(dwz.cons_resp(300, "删除用户信息时出错了，用户不存在"))
+        else
+           ngx.say(dwz.cons_resp(300, "删除用户信息时出错了:" .. tostring(err)))
+        end     
+        ngx.exit(0)
+    end
+   
+    --TODO: 密码提示框会小时问题修改。
+    ngx.say(dwz.cons_resp(200, "用户【" .. userinfo.username .. "】删除成功！", {navTabId="user_list"}))
 end
 
 function _M.detail_render()
@@ -103,112 +238,5 @@ function _M.detail_render()
     end
 
 end
-
---[[
-function _M.add_post()
-	ngx.req.read_body()
-    local args, err = ngx.req.get_post_args()
-
-    local app = args.app 
-    local appname = args.appname
-    local remark = args.remark
-    local create_time = ngx.time()
-    local update_time = ngx.time()
-    local appinfo = {app=app,appname=appname,remark=remark, 
-    				create_time=create_time,update_time=update_time}
-
-    local username = args.username
-    local email = args.email
-    local tel = args.tel 
-    local password = util.random_pwd(16)
-    local manager = args.manager 
-
-    local userinfo = {username=username, email=email, tel=tel,password=password,
-    					app=app,manager=manager,role_id="",permission="",
-    					create_time=create_time,update_time=update_time}
-    local ok, connection = mysql.connection_get()
-    if not ok then
-    	ngx.log(ngx.ERR, "mysql.connection_get failed! err:", tostring(connection))
-    	ngx.say(dwz.cons_resp(300, "获取数据库链接出错了:" .. tostring(connection)))
-    	ngx.exit(0)
-    end
-
-    -- 检查应用是否存在。
-    local dao = userdao:new()
-    local ok, exist = dao:exist("app", app)
-    if ok and exist then
-        mysql.connection_put(connection)
-        ngx.say(dwz.cons_resp(300, "保存应用信息时出错了, 应用ID[" .. app .. "]已经存在!"))
-        ngx.exit(0)
-    end
-    local ok, exist = dao:exist("appname", appname)
-    if ok and exist then
-        mysql.connection_put(connection)
-        ngx.say(dwz.cons_resp(300, "保存应用信息时出错了, 应用名称[" .. appname .. "]已经存在!"))
-        ngx.exit(0)
-    end
-    -- 检查用户是否存在
-    local dao = userdao:new()
-    local ok, exist = dao:exist("username", username)
-    if ok and exist then
-        mysql.connection_put(connection)
-        ngx.say(dwz.cons_resp(300, "保存应用信息时出错了, 用户名[" .. username .. "]已经存在!"))
-        ngx.exit(0)
-    end
-    local ok, exist = dao:exist("email", email)
-    if ok and exist then
-        mysql.connection_put(connection)
-        ngx.say(dwz.cons_resp(300, "保存应用信息时出错了, EMAIL[" .. email .. "]已经存在!"))
-        ngx.exit(0)
-    end
-    local ok, exist = dao:exist("tel", tel)
-    if ok and exist then
-        mysql.connection_put(connection)
-        ngx.say(dwz.cons_resp(300, "保存应用信息时出错了, TEL[" .. tel .. "]已经存在!"))
-        ngx.exit(0)
-    end
-
-    local tx_ok, tx_err = mysql.tx_begin(connection)
-    if not tx_ok then
-    	ngx.log(ngx.ERR, "mysql.tx_begin failed! err:", tostring(tx_err))
-    end
-
-    local dao = userdao:new(connection)
-    local ok, err = dao:save(appinfo)
-    if not ok then
-    	ngx.log(ngx.ERR, "userdao:save(", json.dumps(appinfo, ") failed! err:", tostring(err)))
-    	if tx_ok then 
-    		tx_ok, tx_err = mysql.tx_rollback(connection)
-    	end
-        if err == error.err_data_exist then
-            ngx.say(dwz.cons_resp(300, "保存应用信息时出错了: 数据重复"))
-        else
-    	   ngx.say(dwz.cons_resp(300, "保存应用信息时出错了:" .. tostring(err)))
-        end
-    	mysql.connection_put(connection)
-    	ngx.exit(0)
-    end
-    local dao = userdao:new(connection)
-    local ok, err = dao:save(userinfo)
-    if not ok then
-    	ngx.log(ngx.ERR, "userdao:save(", json.dumps(userinfo, ") failed! err:", tostring(err)))
-    	if tx_ok then 
-    		tx_ok, tx_err = mysql.tx_rollback(connection)
-    	end
-    	if err == error.err_data_exist then
-            ngx.say(dwz.cons_resp(300, "保存应用信息时出错了: 数据重复"))
-        else
-           ngx.say(dwz.cons_resp(300, "保存应用管理员信息时出错了:" .. tostring(err)))
-        end
-    	mysql.connection_put(connection)
-    	ngx.exit(0)
-    end
-    tx_ok, tx_err = mysql.tx_commit(connection)
-    mysql.connection_put(connection)
-    --TODO: 密码提示框会小时问题修改。
-	ngx.say(dwz.cons_resp(200, "应用【" .. app .. "】添加成功，管理员：\n用户名：" 
-					.. username .. "\n密码：" .. password, {navTabId="app_list"}))
-end
-]]
 
 return _M

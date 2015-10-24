@@ -27,8 +27,12 @@ function _M:new(connection)
     return setmetatable({ dao = dao}, mt)
 end
 
-function _M:list(page, page_size)
-    return self.dao:list(nil, page, page_size)
+function _M:list(app, page, page_size)
+    local sql_where = nil
+    if app then
+        sql_where = "where app=" .. ngx.quote_sql_str(app)
+    end
+    return self.dao:list(sql_where, page, page_size)
 end
 
 function _M:count()

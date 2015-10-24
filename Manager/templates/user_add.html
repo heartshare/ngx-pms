@@ -16,7 +16,23 @@
 				<label class="row_add">TEL:</label>
 				<input id="tel" name="tel" class="phone" type="text" value="{{tel}}" size="40" maxlength="16"/>
 			</p>
-
+			<p class="row_add">
+				<label class="row_add">应用:</label>
+				<select class="combox" name="app">
+					{% for i, appinfo in ipairs(apps) do %}
+			      		<option value="{{appinfo.app}}">{{appinfo.appname}}</option>
+			      	{% end %}
+				</select>
+			</p>
+			<p class="row_add">
+				<label class="row_add">角色:</label>
+				<select class="combox" name="role_id">
+					{% for i, roleinfo in ipairs(roles) do %}
+			      		<option value="{{roleinfo.id}}">{{roleinfo.name}}</option>
+			      	{% end %}
+				</select>
+			</p>
+			<!--
 			<p class="row_add">
 				<label class="row_add">密码：</label>
 				<input id="password" name="password" class="required alphanumeric" type="password" size="40"  minlength="4" maxlength="24"/>
@@ -25,6 +41,7 @@
 				<label class="row_add">确认密码：</label>
 				<input id="repassword" name="repassword" class="required" type="password" size="40" equalto="#password"/>
 			</p>
+			-->
 			
 			<p class="row_add">
 				<table >
@@ -47,8 +64,9 @@
 						</td>
 						<td valign="top">
 						<select id="permission_others" name="permission_others" multiple="multiple" size="8" style="width:100px;height: 120px;">					
-							
-							<option value="" ></option>
+							{% for i, perminfo in ipairs(permission_others) do %}
+							<option value="{{perminfo.id}}">{{perminfo.name}}</option>
+							{% end %}
 						</select>
 						</td>
 					</tr>

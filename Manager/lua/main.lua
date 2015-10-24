@@ -42,8 +42,12 @@ elseif uri == "/user/list" then
 	user.list_render()
 elseif uri == "/user/add" then
 	user.add_render()
+elseif uri == "/user/add_post" then
+	user.add_post()
 elseif uri == "/user/detail" then
 	user.detail_render()
+elseif uri == "/user/del" then
+	user.del_post()
 elseif uri == "/passport/login" then
 	login.login_render()
 elseif uri == "/passport/login_post" then

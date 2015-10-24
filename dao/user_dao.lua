@@ -126,6 +126,10 @@ end
 function _M:get_by_id(userid)
    return _user_get_internal(self.dao, userid) 
 end
+function _M:delete_by_id(userid)
+    local where = "where id=" .. userid
+   return self.dao:delete_by(where)
+end
 
 function _M:change_pwd(userid, password)
     return self.dao:update({password=password}, {id=userid})

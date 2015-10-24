@@ -1,3 +1,4 @@
+{% local util = require("util.util") %}
 <script language="javascript">
 	{% if errmsg then %}	
 		alertMsg.error("{{errmsg}}");
@@ -36,8 +37,8 @@
 	<div class="panelBar">
 		<ul class="toolBar">
 			<li><a class="add" href="/user/add" target="dialog" rel="dlg_adduser" height="500" width="480" title="添加用户"><span>添加</span></a></li>
-			<li><a class="delete" href="/user/del?uid={uid}" target="ajaxTodo" title="确定要删除吗?"><span>删除</span></a></li>
-			<li><a class="edit" href="/user/add?uid={uid}" target="dialog"  height="500" width="480" title="修改用户"><span>修改</span></a></li>
+			<li><a class="delete" href="/user/del?id={id}" target="ajaxTodo" title="确定要删除吗?"><span>删除</span></a></li>
+			<li><a class="edit" href="/user/add?id={id}" target="dialog"  height="500" width="480" title="修改用户"><span>修改</span></a></li>
 			<li class="line">line</li>
 			<li>&nbsp;</li>
 		</ul>
@@ -53,7 +54,7 @@
 				<th width="50">管理权限</th>
 				<th width="100">角色</th>
 				<th width="200">权限</th>
-				<th width="80">创建日期</th>
+				<th width="100">创建日期</th>
 			</tr>
 		</thead>
 		<tbody>
@@ -68,7 +69,7 @@
 				<td>{{record.manager}}</td>
 				<td>{{record.role_id}}</td>
 				<td>{{record.permission}}</td>
-				<td>{{record.create_time}}</td>
+				<td>{{util.localtime(record.create_time, "%Y-%m-%d %H:%M")}}</td>
 			</tr>
 		  {% end %}
 		{% end %}

@@ -301,4 +301,10 @@ function _M.random_pwd(length)
     return table.concat(t)
 end
 
+function _M.localtime(seconds, format)
+    seconds = tonumber(seconds)
+    format = format or "%Y-%m-%d %H:%M:%S"
+    return os.date(format, seconds)
+end
+
 return _M
