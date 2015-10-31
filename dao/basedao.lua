@@ -186,7 +186,7 @@ function _M:exist(field, value)
     if type(value) == 'string' then
         value = ngx.quote_sql_str(value)
     end
-    local where = "where " .. field .. "=" .. value
+    local where = "WHERE " .. field .. "=" .. value
     local ok, count = _M.count_by(self, where)
     if ok then
         return ok, count>0

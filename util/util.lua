@@ -292,6 +292,7 @@ end
 _M.pwd_tables = init_pwd_tables()
 
 function _M.random_pwd(length)
+    math.randomseed(os.time())
     length = length or 10
     local t = {}
     for i = 1,length do

@@ -63,13 +63,25 @@ function _M.list_render()
 end
 
 function _M.add_render()
-	ngx.req.read_body()
-    local args, err = ngx.req.get_post_args()
-	-- local id = tonumber(args.id)
-    local userinfo = ngx.ctx.userinfo
+	local args = ngx.req.get_uri_args()
+    local id = tonumber(args.id)
+	
+    local ok, userinfo = nil
+    if id then
+        local dao = userdao:new()
+        ok, userinfo = dao:get_by_id(id)
+        if not ok then
+            ngx.log(ngx.ERR, "userdao:get_by_id(", id, ") failed! err:", tostring(userinfo))
+            ngx.say(dwz.cons_resp(300, "修改用户信息时出错：" .. tostring(userinfo)))
+            ngx.exit(0)
+        end
+    end
+    
+
+    local cur_userinfo = ngx.ctx.userinfo
     local app = nil
     local app_ok, apps = nil
-    if userinfo.manager == "super" then
+    if cur_userinfo.manager == "super" then
         --可选择多个应用。
         local dao = appdao:new()
         app_ok, apps = dao:list(1, 1024)
@@ -78,8 +90,8 @@ function _M.add_render()
             apps = {}
         end
     else
-        app = userinfo.app
-        apps = {userinfo.app}
+        app = cur_userinfo.app
+        apps = {cur_userinfo.app}
     end
 
 	local dao = permdao:new()
@@ -101,76 +113,130 @@ function _M.add_render()
         else
             ngx.log(ngx.ERR, "roledao:list(", tostring(roles), ") failed! err:", tostring(roles))
         end
-        roles = {}
+        roles = {{id="", name="无", remark=""}}
+    else
+        table.insert(roles, 1, {id="", name="无", remark=""})
+    end
+
+    if userinfo and userinfo.user_permissions then
+        local user_permissions = {}
+        for i, permission in ipairs(userinfo.user_permissions) do 
+            user_permissions[permission] = 1
+        end
+
+        local tmp_permissions = {}
+        for i, permission in ipairs(permissions) do 
+            -- 该User没有的权限，才需要作为备选。
+            if not user_permissions[permission] then
+                table.insert(tmp_permissions, permission)
+            end
+        end
+        permissions = tmp_permissions
     end
 
 	template.caching(tmpl_caching)
-	template.render("user_add.html", {permission_others=permissions, apps=apps, roles=roles})
+	template.render("user_add.html", {permission_others=permissions, apps=apps, roles=roles, userinfo=userinfo})
 	ngx.exit(0)
 end
 
 function _M.add_post()
 	ngx.req.read_body()
     local args, err = ngx.req.get_post_args()
-
+    local id = tonumber(args.id)
     local username = args.username
     local email = args.email
     local tel = args.tel 
     local app = args.app
-    local password = util.random_pwd(16)
     local manager = args.manager or ""
     local role_id = args.role_id or ""
     local permission = args.permission or {}
     local create_time = ngx.time()
     local update_time = ngx.time()
 
-    ngx.log(ngx.ERR, "---[", json.dumps(args), "]---")
+    --ngx.log(ngx.ERR, "---[", json.dumps(args), "]---")
     if type(permission) == 'table' then
         permission = table.concat(permission, "|")
     end
-    local userinfo = {username=username, email=email, tel=tel,password=password,
+    local userinfo = {username=username, email=email, tel=tel,
     					app=app,manager=manager,role_id=role_id,permission=permission,
     					create_time=create_time,update_time=update_time}
     
     -- 检查用户是否存在
     local dao = userdao:new()
-    local ok, exist = dao:exist("username", username)
-    if ok and exist then
-        ngx.say(dwz.cons_resp(300, "保存用户信息时出错了, 用户名[" .. username .. "]已经存在!"))
-        ngx.exit(0)
+    if id then
+        local ok, exist = dao:exist_exclude("username", username, id)
+        if ok and exist then
+            ngx.say(dwz.cons_resp(300, "修改用户信息时出错了, 用户名[" .. username .. "]已经存在!"))
+            ngx.exit(0)
+        end
+        local ok, exist = dao:exist_exclude("email", email, id)
+        if ok and exist then
+            ngx.say(dwz.cons_resp(300, "修改用户信息时出错了, EMAIL[" .. email .. "]已经存在!"))
+            ngx.exit(0)
+        end
+        if tel and string.len(tel) > 0 then
+            local ok, exist = dao:exist_exclude("tel", tel, id)
+            if ok and exist then
+                ngx.say(dwz.cons_resp(300, "修改用户信息时出错了, TEL[" .. tel .. "]已经存在!"))
+                ngx.exit(0)
+            end
+        else 
+            userinfo["tel"] = nil
+        end
+        userinfo["create_time"] = nil
+        local ok, err = dao:update(userinfo, {id=id})
+        if not ok then
+            ngx.log(ngx.ERR, "userdao:update(", json.dumps(userinfo, ") failed! err:", tostring(err)))
+            
+            if err == error.err_data_exist then
+                ngx.say(dwz.cons_resp(300, "修改用户信息时出错了: 数据重复"))
+            else
+               ngx.say(dwz.cons_resp(300, "修改用户信息时出错了:" .. tostring(err)))
+            end     
+            ngx.exit(0)
+        end
+        ngx.say(dwz.cons_resp(200, "用户【" .. username .. "】修改成功", {navTabId="user_list"}))
+    else
+        local ok, exist = dao:exist("username", username)
+        if ok and exist then
+            ngx.say(dwz.cons_resp(300, "保存用户信息时出错了, 用户名[" .. username .. "]已经存在!"))
+            ngx.exit(0)
+        end
+        local ok, exist = dao:exist("email", email)
+        if ok and exist then
+            ngx.say(dwz.cons_resp(300, "保存用户信息时出错了, EMAIL[" .. email .. "]已经存在!"))
+            ngx.exit(0)
+        end
+        if tel and string.len(tel) > 0 then
+            local ok, exist = dao:exist("tel", tel)
+            if ok and exist then
+                ngx.say(dwz.cons_resp(300, "保存用户信息时出错了, TEL[" .. tel .. "]已经存在!"))
+                ngx.exit(0)
+            end
+        else 
+            userinfo["tel"] = nil
+        end
+        local password = util.random_pwd(16)
+        userinfo["password"] = util.make_pwd(password)
+        local ok, err = dao:save(userinfo)
+        if not ok then
+            ngx.log(ngx.ERR, "userdao:save(", json.dumps(userinfo, ") failed! err:", tostring(err)))
+            
+            if err == error.err_data_exist then
+                ngx.say(dwz.cons_resp(300, "保存用户信息时出错了: 数据重复"))
+            else
+               ngx.say(dwz.cons_resp(300, "保存用户信息时出错了:" .. tostring(err)))
+            end     
+            ngx.exit(0)
+        end
+         --TODO: 密码提示框会小时问题修改。
+        ngx.say(dwz.cons_resp(200, "用户【" .. username .. "】添加成功: \n用户名：" 
+                    .. username .. "\n密码：" .. password, {navTabId="user_list"}))
     end
-    local ok, exist = dao:exist("email", email)
-    if ok and exist then
-        ngx.say(dwz.cons_resp(300, "保存用户信息时出错了, EMAIL[" .. email .. "]已经存在!"))
-        ngx.exit(0)
-    end
-    local ok, exist = dao:exist("tel", tel)
-    if ok and exist then
-        ngx.say(dwz.cons_resp(300, "保存用户信息时出错了, TEL[" .. tel .. "]已经存在!"))
-        ngx.exit(0)
-    end
-
-    local dao = userdao:new()
-    local ok, err = dao:save(userinfo)
-    if not ok then
-    	ngx.log(ngx.ERR, "userdao:save(", json.dumps(userinfo, ") failed! err:", tostring(err)))
-    	
-    	if err == error.err_data_exist then
-            ngx.say(dwz.cons_resp(300, "保存用户信息时出错了: 数据重复"))
-        else
-           ngx.say(dwz.cons_resp(300, "保存用户信息时出错了:" .. tostring(err)))
-        end    	
-    	ngx.exit(0)
-    end
-   
-    --TODO: 密码提示框会小时问题修改。
-	ngx.say(dwz.cons_resp(200, "用户【" .. username .. "】添加成功: \n用户名：" 
-					.. username .. "\n密码：" .. password, {navTabId="user_list"}))
 end
 
 function _M.del_post()
     local args = ngx.req.get_uri_args()
-
     local id = tonumber(args.id)
     if not id then
         ngx.say(dwz.cons_resp(300, "删除用户信息时出错了, 缺少用户ID!"))
