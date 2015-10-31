@@ -22,4 +22,38 @@ function _M.get_app_and_apps()
     return app, apps
 end
 
+function print_tab(tab, name)
+    if tab == nil then
+        tab = {}
+    end
+    local str = name .. table.concat(tab, " | ")
+    ngx.log(ngx.INFO, "-----", str)
+end
+
+-- return all_permissions - sub_permissions
+function _M.perm_sub(all_permissions, sub_permissions)
+    --print_tab(all_permissions, 'all_permissions')
+    --print_tab(sub_permissions, 'sub_permissions')
+
+    if not sub_permissions then
+        return all_permissions
+    end
+    if not all_permissions then
+        return all_permissions
+    end
+
+    local sub_permissions_as_map = {}
+    for i, value in ipairs(sub_permissions) do 
+        sub_permissions_as_map[value] = 1
+    end
+
+    local tmp_values = {}
+    for i, permission in ipairs(all_permissions) do 
+        if not sub_permissions_as_map[permission.id] then
+            table.insert(tmp_values, permission)
+        end
+    end
+    return tmp_values   
+end
+
 return _M

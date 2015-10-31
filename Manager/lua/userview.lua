@@ -104,20 +104,10 @@ function _M.add_render()
         table.insert(roles, 1, {id="", name="无", remark=""})
     end
 
-    if userinfo and userinfo.user_permissions then
-        local user_permissions = {}
-        for i, permission in ipairs(userinfo.user_permissions) do 
-            user_permissions[permission] = 1
-        end
 
-        local tmp_permissions = {}
-        for i, permission in ipairs(permissions) do 
-            -- 该User没有的权限，才需要作为备选。
-            if not user_permissions[permission] then
-                table.insert(tmp_permissions, permission)
-            end
-        end
-        permissions = tmp_permissions
+    if userinfo then
+        ngx.log(ngx.INFO, "------------------------------")
+        permissions = viewpub.perm_sub(permissions, userinfo.user_permissions)
     end
 
 	template.caching(tmpl_caching)

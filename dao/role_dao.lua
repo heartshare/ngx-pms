@@ -36,7 +36,11 @@ function _M:list(app, page, page_size)
 end
 
 function _M:count()
-    local ok, obj = self.dao:count_by(nil)
+    local sql_where = nil
+    if app then
+        sql_where = "where app=" .. ngx.quote_sql_str(app)
+    end
+    local ok, obj = self.dao:count_by(sql_where)
     return ok, obj
 end
 
