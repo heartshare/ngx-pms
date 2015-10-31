@@ -48,8 +48,35 @@ function _M:save(values)
     return self.dao:save(values)
 end
 
+function _M:update(values, update_by_values)
+    return self.dao:update(values, update_by_values)
+end
+
 function _M:exist(field, value)
     return self.dao:exist(field, value)
+end
+
+function _M:exist_exclude(field, value, id)
+    if type(value) == 'string' then
+        value = ngx.quote_sql_str(value)
+    end
+
+    local where = "WHERE id!=" .. ngx.quote_sql_str(id) .. " AND " .. field .. "=" .. value
+    local ok, count = self.dao:count_by(where)
+    if ok then
+        return ok, count>0
+    else
+        return ok, count 
+    end
+end
+
+function _M:get_by_id(id)
+    return self.dao:get_by("where id=" .. ngx.quote_sql_str(id))
+end
+
+function _M:delete_by_id(id)
+    local where = "where id=" .. ngx.quote_sql_str(id)
+    return self.dao:delete_by(where)
 end
 
 return  _M

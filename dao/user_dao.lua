@@ -146,7 +146,7 @@ function _M:get_by_id(userid)
 end
 function _M:delete_by_id(userid)
     local where = "where id=" .. userid
-   return self.dao:delete_by(where)
+    return self.dao:delete_by(where)
 end
 
 function _M:change_pwd(userid, password)

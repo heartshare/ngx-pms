@@ -7,6 +7,7 @@ local template = require "resty.template"
 local config = require("config")
 local app = require("Manager.lua.appview")
 local user = require("Manager.lua.userview")
+local perm = require("Manager.lua.permview")
 local login = require("Manager.lua.login")
 local util = require("util.util")
 local tmpl_caching = config.tmpl_caching
@@ -29,37 +30,31 @@ if not util.startswith(uri, "/passport/login") then
 	login.check()
 end
 
-if uri == "/" then
-	main_render()
-elseif uri == "/app/list" then
-	app.list_render()
-elseif uri == "/app/add" then
-	app.add_render()
-elseif uri == "/app/add_post" then
-	app.add_post()
+local router = {
+	["/"] = main_render,
+	["/app/list"] = app.list_render,
+	["/app/add"] = app.add_render,
+	["/app/add_post"] = app.add_post,
+	["/user/list"] = user.list_render,
+	["/user/add"] = user.add_render,
+	["/user/add_post"] = user.add_post,
+	["/user/detail"] = user.detail_render,
+	["/user/del"] = user.del_post,
+	["/passport/login"] = login.login_render,
+	["/passport/login_post"] = login.login_post,
+	["/passport/logout"] = login.logout_post,
+	["/passport/changepwd"] = login.changepwd_render,
+	["/passport/changepwd_post"] = login.changepwd_post,
+	["/perm/list"] = perm.list_render,
+	["/perm/add"] = perm.add_render,
+	["/perm/add_post"] = perm.add_post,
+	["/perm/del"] = perm.del_post,
 
-elseif uri == "/user/list" then
-	user.list_render()
-elseif uri == "/user/add" then
-	user.add_render()
-elseif uri == "/user/add_post" then
-	user.add_post()
-elseif uri == "/user/detail" then
-	user.detail_render()
-elseif uri == "/user/del" then
-	user.del_post()
-elseif uri == "/passport/login" then
-	login.login_render()
-elseif uri == "/passport/login_post" then
-	login.login_post()
-elseif uri == "/passport/logout" then
-	login.logout_post()
-elseif uri == "/passport/changepwd" then
-	login.changepwd_render()
-elseif uri == "/passport/changepwd_post" then
-	login.changepwd_post()
+}
 
-else
+if router[uri] then
+	router[uri]()
+else 
 	ngx.log(ngx.ERR, "invalid request [", uri, "]")
 	ngx.exit(404)
 end

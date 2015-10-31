@@ -221,10 +221,14 @@ end
 
 function _M:update(values, update_by_values)
     local sql = get_update_sql(self.tablename, self.table_meta, values, update_by_values)
-    local effects, err = mysql_util.execute(sql, self.connection)
+    local effects, err, errno = mysql_util.execute(sql, self.connection)
     if effects == -1 then
         ngx.log(ngx.ERR, "execute [", sql, "] failed! err:", tostring(err))
-        return false
+        if errno == 1062 then
+            return false, error.err_data_exist
+        else
+            return false, err
+        end
     end
     return true
 end

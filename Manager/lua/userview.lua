@@ -7,7 +7,7 @@ local template = require "resty.template"
 local config = require("config")
 local userdao = require('dao.user_dao')
 local permdao = require('dao.perm_dao')
-local appdao = require("dao.app_dao")
+local viewpub = require("Manager.lua.viewpub")
 local roledao = require("dao.role_dao")
 local mysql = require("dao.mysql_util")
 local json = require("util.json")
@@ -78,22 +78,8 @@ function _M.add_render()
     end
     
 
-    local cur_userinfo = ngx.ctx.userinfo
-    local app = nil
-    local app_ok, apps = nil
-    if cur_userinfo.manager == "super" then
-        --可选择多个应用。
-        local dao = appdao:new()
-        app_ok, apps = dao:list(1, 1024)
-        if not app_ok then
-            ngx.log(ngx.ERR, "appdao:list() failed! err:", tostring(apps))
-            apps = {}
-        end
-    else
-        app = cur_userinfo.app
-        apps = {cur_userinfo.app}
-    end
-
+    
+    local app, apps = viewpub.get_app_and_apps()
 	local dao = permdao:new()
     local perm_ok, permissions = dao:list(app, 1, 1024)
     if not perm_ok then
