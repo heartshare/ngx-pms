@@ -131,7 +131,7 @@ function _M.add_post()
     local dao = appdao:new(connection)
     local ok, err = dao:save(appinfo)
     if not ok then
-    	ngx.log(ngx.ERR, "appdao:save(", json.dumps(appinfo, ") failed! err:", tostring(err)))
+    	ngx.log(ngx.ERR, "appdao:save(", json.dumps(appinfo), ") failed! err:", tostring(err))
     	if tx_ok then 
     		tx_ok, tx_err = mysql.tx_rollback(connection)
     	end
@@ -146,7 +146,7 @@ function _M.add_post()
     local dao = userdao:new(connection)
     local ok, err = dao:save(userinfo)
     if not ok then
-    	ngx.log(ngx.ERR, "userdao:save(", json.dumps(userinfo, ") failed! err:", tostring(err)))
+    	ngx.log(ngx.ERR, "userdao:save(", json.dumps(userinfo), ") failed! err:", tostring(err))
     	if tx_ok then 
     		tx_ok, tx_err = mysql.tx_rollback(connection)
     	end

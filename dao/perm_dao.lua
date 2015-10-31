@@ -57,17 +57,7 @@ function _M:exist(field, value)
 end
 
 function _M:exist_exclude(field, value, id)
-    if type(value) == 'string' then
-        value = ngx.quote_sql_str(value)
-    end
-
-    local where = "WHERE id!=" .. ngx.quote_sql_str(id) .. " AND " .. field .. "=" .. value
-    local ok, count = self.dao:count_by(where)
-    if ok then
-        return ok, count>0
-    else
-        return ok, count 
-    end
+    return self.dao:exist_exclude(field, value, id)
 end
 
 function _M:get_by_id(id)

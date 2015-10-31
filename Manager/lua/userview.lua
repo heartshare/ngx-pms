@@ -6,7 +6,6 @@ date: 20151019
 local template = require "resty.template"
 local config = require("config")
 local userdao = require('dao.user_dao')
-local permdao = require('dao.perm_dao')
 local viewpub = require("Manager.lua.viewpub")
 local roledao = require("dao.role_dao")
 local mysql = require("dao.mysql_util")
@@ -77,19 +76,8 @@ function _M.add_render()
         end
     end
     
-
-    
     local app, apps = viewpub.get_app_and_apps()
-	local dao = permdao:new()
-    local perm_ok, permissions = dao:list(app, 1, 1024)
-    if not perm_ok then
-        if perm_ok == error.err_data_not_exist then
-
-        else
-            ngx.log(ngx.ERR, "permdao:list(", tostring(app), ") failed! err:", tostring(permissions))
-        end
-        permissions = {}
-    end
+	local permissions = viewpub.get_permissins(app)
 
     local dao = roledao:new()
     local role_ok, roles = dao:list(app, 1, 1024)
@@ -106,7 +94,6 @@ function _M.add_render()
 
 
     if userinfo then
-        ngx.log(ngx.INFO, "------------------------------")
         permissions = viewpub.perm_sub(permissions, userinfo.user_permissions)
     end
 
@@ -162,7 +149,7 @@ function _M.add_post()
         userinfo["create_time"] = nil
         local ok, err = dao:update(userinfo, {id=id})
         if not ok then
-            ngx.log(ngx.ERR, "userdao:update(", json.dumps(userinfo, ") failed! err:", tostring(err)))
+            ngx.log(ngx.ERR, "userdao:update(", json.dumps(userinfo),",", json.dumps({id=id}), ") failed! err:", tostring(err))
             
             if err == error.err_data_exist then
                 ngx.say(dwz.cons_resp(300, "修改用户信息时出错了: 数据重复"))
@@ -196,7 +183,7 @@ function _M.add_post()
         userinfo["password"] = util.make_pwd(password)
         local ok, err = dao:save(userinfo)
         if not ok then
-            ngx.log(ngx.ERR, "userdao:save(", json.dumps(userinfo, ") failed! err:", tostring(err)))
+            ngx.log(ngx.ERR, "userdao:save(", json.dumps(userinfo), ") failed! err:", tostring(err))
             
             if err == error.err_data_exist then
                 ngx.say(dwz.cons_resp(300, "保存用户信息时出错了: 数据重复"))

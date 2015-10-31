@@ -35,7 +35,7 @@ function _M:list(app, page, page_size)
     return self.dao:list(sql_where, page, page_size)
 end
 
-function _M:count()
+function _M:count(app)
     local sql_where = nil
     if app then
         sql_where = "where app=" .. ngx.quote_sql_str(app)
@@ -48,6 +48,10 @@ function _M:save(values)
     return self.dao:save(values)
 end
 
+function _M:update(values, update_by_values)
+    return self.dao:update(values, update_by_values)
+end
+
 function _M:exist(field, value)
     return self.dao:exist(field, value)
 end
@@ -58,6 +62,7 @@ function _M:get_by_id(id)
     if not ok then
         return  ok, obj
     end
+
     local permissions = {}
     if obj.permission then
         permissions = util.split(obj.permission, "|")
@@ -65,6 +70,15 @@ function _M:get_by_id(id)
     obj.permissions = permissions
 
     return ok, obj
+end
+
+function _M:exist_exclude(field, value, id)
+    return self.dao:exist_exclude(field, value, id)
+end
+
+function _M:delete_by_id(id)
+    local where = "where id=" .. ngx.quote_sql_str(id)
+    return self.dao:delete_by(where)
 end
 
 return  _M

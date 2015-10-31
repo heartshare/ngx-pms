@@ -7,6 +7,7 @@ local mysql_util = require("dao.mysql_util")
 local util = require("util.util")
 local config = require("config")
 local json = require('util.json')
+local cjson = require("cjson")
 local error = require('dao.error')
 
 local _M = {}
@@ -123,6 +124,11 @@ function _M:get_by(where)
     if util.tableIsNull(result) then
         return  false, error.err_data_not_exist
     end
+    for key, value in pairs(result) do 
+        if value == cjson.null then
+            result[key] = nil
+        end
+    end
 
     return  true, result
 end
@@ -195,6 +201,25 @@ function _M:exist(field, value)
     end
 end
 
+function _M:exist_exclude(field, value, id)
+    if type(value) == 'string' then
+        value = ngx.quote_sql_str(value)
+    end
+    if type(id) == 'number' then
+        id = tostring(id)
+    elseif type(id) == 'string' then
+        id = ngx.quote_sql_str(id)
+    end
+
+    local where = "WHERE id!=" .. id .. " AND " .. field .. "=" .. value
+    local ok, count = _M.count_by(self, where)
+    if ok then
+        return ok, count>0
+    else
+        return ok, count 
+    end
+end
+
 function _M:save(values)
     local sql = get_insert_sql(self.tablename, self.table_meta, values)
     local effects, err, errno = mysql_util.execute(sql, self.connection)
@@ -220,6 +245,15 @@ function _M:saveOrUpdate(values)
 end
 
 function _M:update(values, update_by_values)
+    if not values then
+        ngx.log(ngx.ERR, "param values is missing")
+        return false, error.err_args_invalid
+    end
+    if not update_by_values then
+        ngx.log(ngx.ERR, "param update_by_values is missing")
+        return false, error.err_args_invalid
+    end
+
     local sql = get_update_sql(self.tablename, self.table_meta, values, update_by_values)
     local effects, err, errno = mysql_util.execute(sql, self.connection)
     if effects == -1 then

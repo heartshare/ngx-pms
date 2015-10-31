@@ -1,4 +1,5 @@
 local appdao = require("dao.app_dao")
+local permdao = require('dao.perm_dao')
 
 local _M = {}
 
@@ -22,12 +23,18 @@ function _M.get_app_and_apps()
     return app, apps
 end
 
-function print_tab(tab, name)
-    if tab == nil then
-        tab = {}
+function _M.get_permissins(app)
+    local dao = permdao:new()
+    local perm_ok, permissions = dao:list(app, 1, 1024)
+    if not perm_ok then
+        if perm_ok == error.err_data_not_exist then
+
+        else
+            ngx.log(ngx.ERR, "permdao:list(", tostring(app), ") failed! err:", tostring(permissions))
+        end
+        permissions = {}
     end
-    local str = name .. table.concat(tab, " | ")
-    ngx.log(ngx.INFO, "-----", str)
+    return permissions
 end
 
 -- return all_permissions - sub_permissions
