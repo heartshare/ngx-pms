@@ -26,7 +26,7 @@
 				<th width="120">权限名</th>
 				<th width="200">说明</th>
 				<th width="80">应用</th>
-				<th width="80">创建日期</th>
+				<th width="80">修改日期</th>
 			</tr>
 		</thead>
 		<tbody>
@@ -37,7 +37,7 @@
 				<td>{{record.name}}</td>
 				<td>{{record.remark}}</td>
 				<td>{{record.app}}</td>
-				<td>{{util.localtime(record.create_time)}}</td>
+				<td>{{util.localtime(record.update_time)}}</td>
 			</tr>
 		  {% end %}
 		{% end %}

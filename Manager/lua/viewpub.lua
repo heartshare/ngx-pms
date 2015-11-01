@@ -1,5 +1,6 @@
 local appdao = require("dao.app_dao")
 local permdao = require('dao.perm_dao')
+local error = require('dao.error')
 
 local _M = {}
 
@@ -18,7 +19,13 @@ function _M.get_app_and_apps()
         end
     else
         app = cur_userinfo.app
-        apps = {cur_userinfo.app}
+        local dao = appdao:new()
+        local ok, appinfo = dao:get_by_app(app)
+        if ok then
+            apps = {appinfo}
+        else
+            apps = {{app=app,appname=app}}
+        end
     end
     return app, apps
 end
@@ -46,6 +53,17 @@ function _M.get_url_types()
     --table.insert(types, {id='regex', name="正则匹配"})
 
     return types
+end
+
+-- return {'permission id'='permission name'}
+function _M.perm_map(all_permissions)
+    local map = {}
+    if all_permissions then
+        for i, permission in ipairs(all_permissions) do
+            map[permission.id] = permission.name
+        end
+    end
+    return map
 end
 
 -- return all_permissions - sub_permissions

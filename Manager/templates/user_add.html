@@ -1,7 +1,13 @@
+{% local util = require("util.util") %}
 
 <div class="pageContent">
 	<form method="post" action="/user/add_post" class="pageForm required-validate" 
-				onsubmit="return validateCallback(this, dialogAddDone);">
+			{% if userinfo then %}
+				onsubmit="return validateCallback(this, dialogAjaxDone);" 
+			{% else %}
+				onsubmit="return validateCallback(this, dialogAjaxDoneEx);" 
+			{% end %}
+			>
 		<div class="pageFormContent" layoutH="60">
 			{% if userinfo then %}
 			<input type="hidden" name="id" value="{{userinfo.id}}">
@@ -9,23 +15,23 @@
 			{% end %}
 			<p class="row_add">
 				<label class="row_add">用户名：</label>				
-				<input name="username" class="required alphanumeric" type="text" size="40" 
+				<input name="username" class="required alphanumeric" type="text" size="30" 
 				{% if userinfo then %} value="{{userinfo.username}}" {% end %}
 				maxlength="64"/>
 			</p>			
 			<p class="row_add">
 				<label class="row_add">EMAIL：</label>
 				<input id="email" name="email" class="required email" type="text" 
-				{% if userinfo then %} value="{{userinfo.email}}" {% end %} size="40" maxlength="128"/>
+				{% if userinfo then %} value="{{userinfo.email}}" {% end %} size="30" maxlength="128"/>
 			</p>
 			<p class="row_add">
 				<label class="row_add">TEL:</label>
 				<input id="tel" name="tel" class="phone" type="text" 
-				{% if userinfo then %} value="{{userinfo.tel}}" {% end %} size="40" maxlength="16"/>
+				{% if userinfo then %} value="{{userinfo.tel}}" {% end %} size="30" maxlength="16"/>
 			</p>
 			<p class="row_add">
 				<label class="row_add">应用:</label>
-				<select class="combox" name="app" style="width:200px;">
+				<select class="combox" name="app" style="width: 200px;">
 					{% for i, appinfo in ipairs(apps) do %}
 			      		<option value="{{appinfo.app}}" 
 						{% if userinfo and userinfo.app == appinfo.app then %} selected="selected" {% end %}>{{appinfo.appname}}</option>
@@ -34,7 +40,7 @@
 			</p>
 			<p class="row_add">
 				<label class="row_add">角色:</label>
-				<select class="combox" name="role_id" style="width:200px;">
+				<select class="combox" name="role_id" style="width: 200px;">
 					{% for i, roleinfo in ipairs(roles) do %}
 			      		<option value="{{roleinfo.id}}"
 			      		{% if userinfo and userinfo.role_id == roleinfo.id then %} selected="selected" {% end %}>{{roleinfo.name}}</option>
@@ -44,11 +50,11 @@
 			<!--
 			<p class="row_add">
 				<label class="row_add">密码：</label>
-				<input id="password" name="password" class="required alphanumeric" type="password" size="40"  minlength="4" maxlength="24"/>
+				<input id="password" name="password" class="required alphanumeric" type="password" size="30"  minlength="4" maxlength="24"/>
 			</p>
 			<p class="row_add">
 				<label class="row_add">确认密码：</label>
-				<input id="repassword" name="repassword" class="required" type="password" size="40" equalto="#password"/>
+				<input id="repassword" name="repassword" class="required" type="password" size="30" equalto="#password"/>
 			</p>
 			-->
 			
@@ -60,7 +66,9 @@
 						<select id="permission" name="permission" multiple="multiple" size="8" style="width:120px;height: 120px;">
 							{% if userinfo and userinfo.user_permissions then 
 								for i, permission in ipairs(userinfo.user_permissions) do %} 
-							  <option value="{{permission}}" >{{permission}}</option>
+							  <option value="{{permission}}" >
+							  	{{perm_map[permission] or permission}}
+							  </option>
 							{% end 
 							end %}
 						</select>

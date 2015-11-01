@@ -77,27 +77,20 @@ function _M.add_post()
     local password = util.random_pwd(16)
     local manager = args.manager or "admin"
 
-    local userinfo = {username=username, email=email, tel=tel,password=password,
+    local userinfo = {username=username, email=email, tel=tel,
+                        password=util.make_pwd(password),
     					app=app,manager=manager,role_id="",permission="",
     					create_time=create_time,update_time=update_time}
-    local ok, connection = mysql.connection_get()
-    if not ok then
-    	ngx.log(ngx.ERR, "mysql.connection_get failed! err:", tostring(connection))
-    	ngx.say(dwz.cons_resp(300, "获取数据库链接出错了:" .. tostring(connection)))
-    	ngx.exit(0)
-    end
 
     -- 检查应用是否存在。
     local dao = appdao:new()
     local ok, exist = dao:exist("app", app)
     if ok and exist then
-        mysql.connection_put(connection)
         ngx.say(dwz.cons_resp(300, "保存应用信息时出错了, 应用ID[" .. app .. "]已经存在!"))
         ngx.exit(0)
     end
     local ok, exist = dao:exist("appname", appname)
     if ok and exist then
-        mysql.connection_put(connection)
         ngx.say(dwz.cons_resp(300, "保存应用信息时出错了, 应用名称[" .. appname .. "]已经存在!"))
         ngx.exit(0)
     end
@@ -105,24 +98,28 @@ function _M.add_post()
     local dao = userdao:new()
     local ok, exist = dao:exist("username", username)
     if ok and exist then
-        mysql.connection_put(connection)
         ngx.say(dwz.cons_resp(300, "保存应用信息时出错了, 用户名[" .. username .. "]已经存在!"))
         ngx.exit(0)
     end
     --[[
     local ok, exist = dao:exist("email", email)
     if ok and exist then
-        mysql.connection_put(connection)
         ngx.say(dwz.cons_resp(300, "保存应用信息时出错了, EMAIL[" .. email .. "]已经存在!"))
         ngx.exit(0)
     end
     local ok, exist = dao:exist("tel", tel)
     if ok and exist then
-        mysql.connection_put(connection)
         ngx.say(dwz.cons_resp(300, "保存应用信息时出错了, TEL[" .. tel .. "]已经存在!"))
         ngx.exit(0)
     end
     ]]
+
+    local ok, connection = mysql.connection_get()
+    if not ok then
+        ngx.log(ngx.ERR, "mysql.connection_get failed! err:", tostring(connection))
+        ngx.say(dwz.cons_resp(300, "获取数据库链接出错了:" .. tostring(connection)))
+        ngx.exit(0)
+    end
     local tx_ok, tx_err = mysql.tx_begin(connection)
     if not tx_ok then
     	ngx.log(ngx.ERR, "mysql.tx_begin failed! err:", tostring(tx_err))
@@ -161,8 +158,10 @@ function _M.add_post()
     tx_ok, tx_err = mysql.tx_commit(connection)
     mysql.connection_put(connection)
     --TODO: 密码提示框会小时问题修改。
-	ngx.say(dwz.cons_resp(200, "应用【" .. app .. "】添加成功，管理员：\n用户名：" 
-					.. username .. "\n密码：" .. password, {navTabId="app_list"}))
+    
+	ngx.say(dwz.cons_resp(200, string.format([[应用【%s】添加成功，管理员：<br/>
+&nbsp;&nbsp;用户名：%s<br/>&nbsp;&nbsp;密码：%s<br/>
+请记住以上信息！]], app, username, password), {navTabId="app_list", callbackType="closeCurrent"}))
 end
 
 return _M

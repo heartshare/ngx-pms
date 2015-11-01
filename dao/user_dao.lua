@@ -37,6 +37,9 @@ local function get_where_sql(args)
         return nil
     end
     local fields = {}
+    if args.app then
+        table.insert(fields, "app = " .. ngx.quote_sql_str(args.app))
+    end
     if args.username then
         table.insert(fields, "username LIKE " .. ngx.quote_sql_str("%" .. args.username .. "%"))
     end
@@ -117,7 +120,9 @@ function _user_get_internal(dao, id, username)
     obj.permissions = util.merge_array_as_map(permissions, role_permissions)
     obj.user_permissions = permissions 
     obj.role_permissions = role_permissions
-    
+    if permissions then
+        obj.permission_alt = table.concat(permissions, ",")
+    end
     --[[
     ngx.log(ngx.INFO, "------------------------------------")
     for k, v in pairs(obj.permissions) do

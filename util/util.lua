@@ -61,6 +61,17 @@ function _M.startswith(str,startstr)
    return startstr=='' or string.sub(str,1, string.len(startstr))==startstr
 end
 
+function _M.fillspace(str, n)
+    str = str or ""
+    n = n or 1
+    local l = string.len(str)
+    if l >= n then
+        return str
+    else
+        return str .. string.rep('', n-l)
+    end
+end
+
 -- ngx.log(ngx.INFO, "config.idc_name:", config.idc_name, ", config.is_root:", config.is_root)
 -- delimiter 应该是单个字符。如果是多个字符，表示以其中任意一个字符做分割。
 function _M.split(s, delimiter)
@@ -308,5 +319,18 @@ function _M.localtime(seconds, format)
     return os.date(format, seconds)
 end
 
+function _M.str_clip(str, n)
+    if not str then return str end
+    local len = string.len(str)
+    if len <= n then
+        return str
+    end
+    return string.sub(str, 1, n-2) .. " .."
+end
+
+function _M.permission_alt(permission)
+    if not permission then return "" end
+    return (string.gsub(permission, "|", "\n"))
+end
 
 return _M

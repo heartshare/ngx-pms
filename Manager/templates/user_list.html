@@ -52,9 +52,9 @@
 				<th width="50">TEL</th>
 				<th width="50">应用ID</th>
 				<th width="50">管理权限</th>
-				<th width="100">角色</th>
+				<th width="80">角色</th>
 				<th width="200">权限</th>
-				<th width="100">创建日期</th>
+				<th width="100">修改日期</th>
 			</tr>
 		</thead>
 		<tbody>
@@ -68,8 +68,8 @@
 				<td>{{record.app}}</td>
 				<td>{{record.manager}}</td>
 				<td>{{record.role_id}}</td>
-				<td>{{record.permission}}</td>
-				<td>{{util.localtime(record.create_time, "%Y-%m-%d %H:%M")}}</td>
+				<td title="{{util.permission_alt(record.permission)}}">{{util.str_clip(record.permission, 30)}}</td>
+				<td>{{util.localtime(record.update_time, "%Y-%m-%d %H:%M")}}</td>
 			</tr>
 		  {% end %}
 		{% end %}

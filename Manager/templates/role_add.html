@@ -1,7 +1,7 @@
 
 <div class="pageContent">
 	<form method="post" action="/role/add_post" class="pageForm required-validate" 
-				onsubmit="return validateCallback(this, dialogAddDone);">
+				onsubmit="return validateCallback(this, dialogAjaxDone);">
 		<div class="pageFormContent" layoutH="60">
 			{% if role then %}
 			<input type="hidden" name="update" value="true"/>
@@ -45,7 +45,9 @@
 						<select id="permission" name="permission" multiple="multiple" size="8" style="width:120px;height: 120px;">
 							{% if role and role.permissions then 
 								for i, permission in ipairs(role.permissions) do %} 
-							  <option value="{{permission}}" >{{permission}}</option>
+							  <option value="{{permission}}" >
+							  	{{perm_map[permission] or permission}}
+							  </option>
 							{% end 
 							end %}
 						</select>

@@ -28,9 +28,7 @@ function _M.list_render()
 
     local cur_userinfo = ngx.ctx.userinfo
     local app = nil
-    if cur_userinfo.manager == "super" then
-        --list时将显示所有app的perm。
-    else
+    if cur_userinfo.manager ~= "super" then
         app = cur_userinfo.app
     end
 
@@ -113,7 +111,7 @@ function _M.add_post()
             end
             ngx.exit(0)
         end
-        ngx.say(dwz.cons_resp(200, "权限【" .. id .. "】修改成功", {navTabId="perm_list"}))
+        ngx.say(dwz.cons_resp(200, "权限【" .. id .. "】修改成功", {navTabId="perm_list", callbackType="closeCurrent"}))
     else
         local ok, exist = dao:exist("id", id)
         if ok and exist then
@@ -136,7 +134,7 @@ function _M.add_post()
             end
         	ngx.exit(0)
         end
-        ngx.say(dwz.cons_resp(200, "权限【" .. id .. "】添加成功", {navTabId="perm_list"}))
+        ngx.say(dwz.cons_resp(200, "权限【" .. id .. "】添加成功", {navTabId="perm_list", callbackType="closeCurrent"}))
     end
 end
 

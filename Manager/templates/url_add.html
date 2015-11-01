@@ -1,14 +1,14 @@
 
 <div class="pageContent">
 	<form method="post" action="/url/add_post" class="pageForm required-validate" 
-				onsubmit="return validateCallback(this, dialogAddDone);">
+				onsubmit="return validateCallback(this, dialogAjaxDone);">
 		<div class="pageFormContent" layoutH="60">
 			{% if urlinfo then %}
 			<input type="hidden" name="id" value="{{urlinfo.id}}">
 			{% end %}
 			<p class="row_add">
 				<label class="row_add">URL：</label>				
-				<input name="url" class="required" type="text" size="40" 
+				<input name="url" class="required" type="text" size="30" 
 				{% if urlinfo then %} value="{{urlinfo.url}}" {% end %}
 				maxlength="64"/>
 			</p>			

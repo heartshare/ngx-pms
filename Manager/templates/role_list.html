@@ -24,10 +24,10 @@
 			<tr>
 				<th width="80">角色ID</th>
 				<th width="120">角色名</th>
-				<th width="200">说明</th>
+				<th width="150">说明</th>
 				<th width="80">应用</th>
 				<th width="280">权限</th>
-				<th width="80">创建日期</th>
+				<th width="100">修改日期</th>
 			</tr>
 		</thead>
 		<tbody>
@@ -38,8 +38,8 @@
 				<td>{{record.name}}</td>
 				<td>{{record.remark}}</td>
 				<td>{{record.app}}</td>
-				<td>{{record.permission}}</td>
-				<td>{{util.localtime(record.create_time)}}</td>
+				<td title="{{util.permission_alt(record.permission)}}">{{util.str_clip(record.permission, 40)}}</td>
+				<td>{{util.localtime(record.update_time)}}</td>
 			</tr>
 		  {% end %}
 		{% end %}

@@ -1,7 +1,7 @@
 
 <div class="pageContent">
 	<form method="post" action="/perm/add_post" class="pageForm required-validate" 
-				onsubmit="return validateCallback(this, dialogAddDone);">
+				onsubmit="return validateCallback(this, dialogAjaxDone);">
 		<div class="pageFormContent" layoutH="56">
 			{% if permission then %}<input type="hidden" name="update" value="true"/>{% end %}
 			<p class="row_add">

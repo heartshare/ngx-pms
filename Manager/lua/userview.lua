@@ -34,6 +34,14 @@ function _M.list_render()
     if args.tel == "" then
         args.tel = nil
     end
+    local cur_userinfo = ngx.ctx.userinfo
+    local app = nil
+    if cur_userinfo.manager ~= "super" then
+        app = cur_userinfo.app
+        ngx.log(ngx.INFO, "----------------: cur_userinfo.app: ", app)
+    end
+    args['app'] = app
+    ngx.log(ngx.INFO, "--------------:", cur_userinfo.manager)
 
 	local dao = userdao:new()
 	local pageNum = tonumber(args.pageNum) or 1
@@ -78,6 +86,8 @@ function _M.add_render()
     
     local app, apps = viewpub.get_app_and_apps()
 	local permissions = viewpub.get_permissions(app)
+    -- 权限ID->权限名称的映射表，用于WEB页面展示使用。
+    local perm_map = viewpub.perm_map(permissions)
 
     local dao = roledao:new()
     local role_ok, roles = dao:list(app, 1, 1024)
@@ -98,7 +108,7 @@ function _M.add_render()
     end
 
 	template.caching(tmpl_caching)
-	template.render("user_add.html", {permission_others=permissions, apps=apps, roles=roles, userinfo=userinfo})
+	template.render("user_add.html", {permission_others=permissions, perm_map=perm_map, apps=apps, roles=roles, userinfo=userinfo})
 	ngx.exit(0)
 end
 
@@ -158,7 +168,7 @@ function _M.add_post()
             end     
             ngx.exit(0)
         end
-        ngx.say(dwz.cons_resp(200, "用户【" .. username .. "】修改成功", {navTabId="user_list"}))
+        ngx.say(dwz.cons_resp(200, "用户【" .. username .. "】修改成功", {navTabId="user_list", callbackType="closeCurrent"}))
     else
         local ok, exist = dao:exist("username", username)
         if ok and exist then
@@ -193,8 +203,9 @@ function _M.add_post()
             ngx.exit(0)
         end
          --TODO: 密码提示框会小时问题修改。
-        ngx.say(dwz.cons_resp(200, "用户【" .. username .. "】添加成功: \n用户名：" 
-                    .. username .. "\n密码：" .. password, {navTabId="user_list"}))
+        ngx.say(dwz.cons_resp(200, string.format([[用户【%s】添加成功: <br/>
+&nbsp;&nbsp;用户名：%s<br/>&nbsp;&nbsp;密码：%s<br/>
+请记住以上信息！]], username, username, password), {navTabId="user_list", callbackType="closeCurrent"}))
     end
 end
 

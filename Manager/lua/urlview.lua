@@ -28,9 +28,7 @@ function _M.list_render()
 
     local cur_userinfo = ngx.ctx.userinfo
     local app = nil
-    if cur_userinfo.manager == "super" then
-        --list时将显示所有app的perm。
-    else
+    if cur_userinfo.manager ~= "super" then
         app = cur_userinfo.app
     end
 
@@ -99,13 +97,19 @@ function _M.add_post()
     -- 检查应用是否存在。
     local dao = urldao:new()
     if id then
+        -- 精确匹配及前缀匹配的URL必须以'/'开头。
+        if (type == "equal" or type == "prefix") and string.sub(url,1,1) ~= '/' then
+            ngx.log(ngx.INFO, "-------------- url: ", url)
+            ngx.say(dwz.cons_resp(300, "修改URL信息时出错了, 精确匹配或前缀匹配的URL必须以'/'开头!"))
+            ngx.exit(0)
+        end
         local ok, exist = dao:exist_exclude(app,type,url, id)
         if ok and exist then
             ngx.say(dwz.cons_resp(300, string.format("修改URL信息时出错了, URL{app:%s,type:%s,url:%s}已经存在!", app,type, url)))
             ngx.exit(0)
         end
 
-        urlinfo[create_time] = nil
+        urlinfo['create_time'] = nil
         local ok, err = dao:update(urlinfo, {id=id})
         if not ok then
             ngx.log(ngx.ERR, "urldao:update(", json.dumps(urlinfo), ") failed! err:", tostring(err))
@@ -116,8 +120,13 @@ function _M.add_post()
             end
             ngx.exit(0)
         end
-        ngx.say(dwz.cons_resp(200, "URL【" .. url .. "】修改成功", {navTabId="url_list"}))
+        ngx.say(dwz.cons_resp(200, "URL【" .. url .. "】修改成功", {navTabId="url_list", callbackType="closeCurrent"}))
     else
+        -- 精确匹配及前缀匹配的URL必须以'/'开头。
+        if (type == "equal" or type == "prefix") and string.sub(url,1,1) ~= '/' then
+            ngx.say(dwz.cons_resp(300, "添加URL信息时出错了, 精确匹配或前缀匹配的URL必须以'/'开头!"))
+            ngx.exit(0)
+        end
         local ok, exist = dao:exist(app,type,url)
         if ok and exist then
             ngx.say(dwz.cons_resp(300, string.format("保存URL信息时出错了, URL{app:%s,type:%s,url:%s}已经存在!", app,type, url)))
@@ -134,7 +143,7 @@ function _M.add_post()
             end
         	ngx.exit(0)
         end
-        ngx.say(dwz.cons_resp(200, "URL【" .. url .. "】添加成功", {navTabId="url_list"}))
+        ngx.say(dwz.cons_resp(200, "URL【" .. url .. "】添加成功", {navTabId="url_list", callbackType="closeCurrent"}))
     end
 end
 

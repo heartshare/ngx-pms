@@ -141,7 +141,7 @@ function _M.changepwd_post()
 	if ok then
 		local msg = "用户【" .. tostring(userinfo.username).. "】密码修改成功！"
 		ngx.log(ngx.INFO, "user [", tostring(userinfo.username), "] success to change password!")
-		ngx.say(dwz.cons_resp(200, msg))
+		ngx.say(dwz.cons_resp(200, msg, {callbackType="closeCurrent"}))
     	ngx.exit(0)
 	else 
 		local msg = "用户【" .. tostring(userinfo.username).. "】修改密码时出错，请联系管理员！"

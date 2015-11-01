@@ -1,3 +1,4 @@
+{% local util = require("util.util") %}
 <script language="javascript">
 	{% if errmsg then %}	
 		alertMsg.error("{{errmsg}}");
@@ -21,9 +22,10 @@
 	<table class="table" width="100%" layoutH="75">
 		<thead>
 			<tr>
-				<th width="120">应用ID</th>
-				<th width="60">应用名称</th>
+				<th width="80">应用ID</th>
+				<th width="100">应用名称</th>
 				<th width="200">备注说明</th>
+				<th width="100">创建日期</th>
 			</tr>
 		</thead>
 		<tbody>
@@ -33,6 +35,7 @@
 				<td>{{record.app}}</td>
 				<td>{{record.appname}}</td>
 				<td>{{record.remark}}</td>
+				<td>{{util.localtime(record.create_time)}}</td>
 			</tr>
 		  {% end %}
 		{% end %}
@@ -44,6 +47,5 @@
 		</div>
 		
 		<div class="pagination" targetType="navTab" totalCount="{{totals}}" numPerPage="{{numPerPage}}" pageNumShown="10" currentPage="{{pageNum}}">&nbsp;</div>
-
 	</div>
 </div>

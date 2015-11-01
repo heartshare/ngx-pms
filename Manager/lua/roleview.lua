@@ -29,9 +29,7 @@ function _M.list_render()
 
     local cur_userinfo = ngx.ctx.userinfo
     local app = nil
-    if cur_userinfo.manager == "super" then
-        --list时将显示所有app的role。
-    else
+    if cur_userinfo.manager ~= "super" then
         app = cur_userinfo.app
     end
 
@@ -73,12 +71,15 @@ function _M.add_render()
     end
     local app, apps = viewpub.get_app_and_apps()
     local permissions = viewpub.get_permissions(app)
+    -- 权限ID->权限名称的映射表，用于WEB页面展示使用。
+    local perm_map = viewpub.perm_map(permissions)
     if role then
         permissions = viewpub.perm_sub(permissions, role.permissions)
     end
 
 	template.caching(tmpl_caching)
-	template.render("role_add.html", {permission_others=permissions, role=role, apps=apps, })
+	template.render("role_add.html", {permission_others=permissions, 
+                        perm_map=perm_map, role=role, apps=apps, })
 	ngx.exit(0)
 end
 
@@ -121,7 +122,7 @@ function _M.add_post()
             end
             ngx.exit(0)
         end
-        ngx.say(dwz.cons_resp(200, "角色【" .. id .. "】修改成功", {navTabId="role_list"}))
+        ngx.say(dwz.cons_resp(200, "角色【" .. id .. "】修改成功", {navTabId="role_list", callbackType="closeCurrent"}))
     else
         local ok, exist = dao:exist("id", id)
         if ok and exist then
@@ -144,7 +145,7 @@ function _M.add_post()
             end
         	ngx.exit(0)
         end
-        ngx.say(dwz.cons_resp(200, "角色【" .. id .. "】添加成功", {navTabId="role_list"}))
+        ngx.say(dwz.cons_resp(200, "角色【" .. id .. "】添加成功", {navTabId="role_list", callbackType="closeCurrent"}))
     end
 end
 

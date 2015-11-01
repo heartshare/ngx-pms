@@ -39,6 +39,10 @@ function _M:exist(field, value)
     return self.dao:exist(field, value)
 end
 
+function _M:get_by_app(app)
+    return self.dao:get_by("where app=" .. ngx.quote_sql_str(app))
+end
+
 return  _M
 
 --[[
