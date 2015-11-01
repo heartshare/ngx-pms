@@ -10,18 +10,21 @@ local ck = require("resty.cookie")   -- https://github.com/cloudflare/lua-resty-
 local _M = {}
 
 function _M.make_cookie(userinfo)
-	-- TODO: Cookie 编码，加密
-	return string.format("%s:%s", tostring(userinfo["id"]), tostring(userinfo["username"]))
+	local cookie = ngx.md5(tostring(userinfo["id"]) .. ":" .. 
+				tostring(userinfo["username"]) .. ":" .. util.random_pwd(10))
+	--return string.format("%s:%s:%s", tostring(userinfo["id"]), tostring(userinfo["username"]), cookie)
+	return cookie
 end
 
 function _M.parse_cookie(cookie)
-	-- TODO: Cookie 编码，加密
+	--[[
 	local arr = util.split(cookie, ':')
-	if #arr == 2 then
-		return tonumber(arr[1]), arr[2]
+	if #arr == 3 then
+		return tonumber(arr[1]), arr[2], arr[3]
 	else 
 		return nil, 'invalid cookie'
-	end
+	end]]
+	return cookie
 end
 
 function _M.get_cookie()
@@ -70,6 +73,37 @@ function _M.set_cookie(value)
 	ngx.header['Set-Cookie'] = cookie_value
 	ngx.log(ngx.INFO, "******* Set-Cookie:", cookie_value)
 	return true
+end
+
+function _M.cache_cookie_set(cookie, value)
+	local cookies = ngx.shared.cookies
+	if cookies then
+		local exptime = config.cookie_config.expires + ngx.time()
+		local ok, err = cookies:safe_set(cookie, value, exptime)
+		if not ok then
+			ngx.log(ngx.ERR, "cookies:safe_set(", cookie, ",", value, ") failed! err:", err)
+			return false
+		end
+		return true
+	else
+		ngx.log(ngx.ERR, "lua_shared_dict named 'cookies' not defined!")
+		return false
+	end
+end
+
+function _M.cache_cookie_get(cookie)
+	local cookies = ngx.shared.cookies
+	if cookies then		
+		local value, flags = cookies:get(cookie)
+		if not value then
+			ngx.log(ngx.WARN, "cookies:get(", cookie, ") failed! not exist!")
+			return nil
+		end
+		return value
+	else
+		ngx.log(ngx.ERR, "lua_shared_dict named 'cookies' not defined!")
+		return nil
+	end
 end
 
 return _M

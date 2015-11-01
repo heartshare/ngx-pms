@@ -9,6 +9,7 @@ local app = require("Manager.lua.appview")
 local user = require("Manager.lua.userview")
 local perm = require("Manager.lua.permview")
 local role = require("Manager.lua.roleview")
+local url = require("Manager.lua.urlview")
 local login = require("Manager.lua.login")
 local util = require("util.util")
 local tmpl_caching = config.tmpl_caching
@@ -54,6 +55,10 @@ local router = {
 	["/role/add"] = role.add_render,
 	["/role/add_post"] = role.add_post,
 	["/role/del"] = role.del_post,
+	["/url/list"] = url.list_render,
+	["/url/add"] = url.add_render,
+	["/url/add_post"] = url.add_post,
+	["/url/del"] = url.del_post,
 
 }
 

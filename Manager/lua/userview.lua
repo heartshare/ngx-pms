@@ -77,12 +77,12 @@ function _M.add_render()
     end
     
     local app, apps = viewpub.get_app_and_apps()
-	local permissions = viewpub.get_permissins(app)
+	local permissions = viewpub.get_permissions(app)
 
     local dao = roledao:new()
     local role_ok, roles = dao:list(app, 1, 1024)
     if not role_ok then
-        if role_ok == error.err_data_not_exist then
+        if roles == error.err_data_not_exist then
 
         else
             ngx.log(ngx.ERR, "roledao:list(", tostring(roles), ") failed! err:", tostring(roles))

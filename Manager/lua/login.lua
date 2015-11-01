@@ -31,6 +31,7 @@ function _M.check()
 	ngx.log(ngx.INFO, "Cookie: ", cookie_value)
 	ngx.ctx.cookie = cookie_value
 	
+	--[[
 	local id, username = ck.parse_cookie(cookie_value)
 	if id == nil then
 		ngx.log(ngx.ERR, "invalid cookie [", tostring(cookie_value), "]")
@@ -42,6 +43,15 @@ function _M.check()
 	if ok then
 		--ngx.log(ngx.INFO, "---[", json.dumps(userinfo), "]---")
 		ngx.ctx.userinfo = userinfo
+	end]]
+	local cookie = ck.parse_cookie(cookie_value)
+
+	local userinfo = ck.cache_cookie_get(cookie)
+	if userinfo then
+		ngx.ctx.userinfo = json.loads(userinfo)
+	else
+		ngx.log(ngx.ERR, "cache_cookie_get(", tostring(cookie), ") failed! nil")
+		util.redirect(login_url)
 	end
 end
 
@@ -80,6 +90,8 @@ function _M.login_post()
 
 		local cookie = ck.make_cookie(userinfo)
 		ck.set_cookie(cookie)
+		ck.cache_cookie_set(cookie, json.dumps(userinfo))
+
 		util.redirect(args.uri)
 	else 
 		args["errmsg"] = "用户名或密码错误！"

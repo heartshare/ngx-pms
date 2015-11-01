@@ -275,6 +275,7 @@ function _M.make_pwd(password)
 end
 
 local function init_pwd_tables()
+    math.randomseed(os.time())
     local pwd_tables = {}
     for i=string.byte('a'),string.byte('z') do
         table.insert(pwd_tables,string.char(i))
@@ -292,7 +293,6 @@ end
 _M.pwd_tables = init_pwd_tables()
 
 function _M.random_pwd(length)
-    math.randomseed(os.time())
     length = length or 10
     local t = {}
     for i = 1,length do
@@ -307,5 +307,6 @@ function _M.localtime(seconds, format)
     format = format or "%Y-%m-%d %H:%M:%S"
     return os.date(format, seconds)
 end
+
 
 return _M

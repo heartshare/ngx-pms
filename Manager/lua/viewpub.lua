@@ -23,11 +23,11 @@ function _M.get_app_and_apps()
     return app, apps
 end
 
-function _M.get_permissins(app)
+function _M.get_permissions(app)
     local dao = permdao:new()
     local perm_ok, permissions = dao:list(app, 1, 1024)
     if not perm_ok then
-        if perm_ok == error.err_data_not_exist then
+        if permissions == error.err_data_not_exist then
 
         else
             ngx.log(ngx.ERR, "permdao:list(", tostring(app), ") failed! err:", tostring(permissions))
@@ -35,6 +35,17 @@ function _M.get_permissins(app)
         permissions = {}
     end
     return permissions
+end
+
+function _M.get_url_types()
+    -- 1.equal 精确匹配\r\n  2.suffix 后缀匹配\r\n  3.prefix 前缀匹配(最大匹配原则)\r\n  4.regex 正则匹配
+    local types = {}
+    table.insert(types, {id='equal', name="精确匹配"})
+    table.insert(types, {id='suffix', name="后缀匹配"})
+    table.insert(types, {id='prefix', name="前缀匹配"})
+    --table.insert(types, {id='regex', name="正则匹配"})
+
+    return types
 end
 
 -- return all_permissions - sub_permissions

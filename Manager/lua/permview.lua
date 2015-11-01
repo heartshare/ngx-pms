@@ -38,7 +38,7 @@ function _M.list_render()
     local dao = permdao:new()
     local ok, permissions = dao:list(app, pageNum, numPerPage)
     if not ok then
-        if ok == error.err_data_not_exist then
+        if permissions == error.err_data_not_exist then
 
         else
             errmsg = permissions

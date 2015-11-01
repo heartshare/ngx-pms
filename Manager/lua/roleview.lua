@@ -39,7 +39,7 @@ function _M.list_render()
     local dao = roledao:new()
     local ok, roles = dao:list(app, pageNum, numPerPage)
     if not ok then
-        if ok == error.err_data_not_exist then
+        if roles == error.err_data_not_exist then
 
         else
             errmsg = roles
@@ -72,7 +72,7 @@ function _M.add_render()
         end
     end
     local app, apps = viewpub.get_app_and_apps()
-    local permissions = viewpub.get_permissins(app)
+    local permissions = viewpub.get_permissions(app)
     if role then
         permissions = viewpub.perm_sub(permissions, role.permissions)
     end
