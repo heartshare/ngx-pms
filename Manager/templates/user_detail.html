@@ -32,7 +32,7 @@
 			<select name="permissions" multiple="multiple" size="8" style="width:130px;height: 100px;">
 				{% if userinfo.user_permissions then %}
 					{% for i, item in ipairs(userinfo.user_permissions) do %}
-						<option value="{{item}}">{{item}}</option>
+						<option value="{{item}}">{{perm_map[item] or item}}</option>
 					{% end %}
 				{% end %}
 			</select>
@@ -40,7 +40,7 @@
 			<select name="permissions" multiple="multiple" size="8" style="width:130px;height: 100px;">
 				{% if userinfo.role_permissions then %}
 					{% for i, item in ipairs(userinfo.role_permissions) do %}
-						<option value="{{item}}">{{item}}</option>
+						<option value="{{item}}">{{perm_map[item] or item}}</option>
 					{% end %}
 				{% end %}
 			</select>		

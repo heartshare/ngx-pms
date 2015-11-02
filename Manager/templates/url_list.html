@@ -35,7 +35,7 @@
 		  {% for i, record in ipairs(urls) do %}
 			<tr target="id" rel="{{record.id}}">
 				<td>{{record.url}}</td>
-				<td>{{record.type}}</td>
+				<td>{{type_maps[record.type] or record.type}}</td>
 				<td>{{record.app}}</td>
 				<td>{{record.permission}}</td>
 				<td>{{util.localtime(record.create_time)}}</td>

@@ -5,26 +5,33 @@ local error = require('dao.error')
 local _M = {}
 
 -- 获取用于查询的app及用于前端显示的app列表。
-function _M.get_app_and_apps()
+function _M.get_app_and_apps(get_apps)
     local cur_userinfo = ngx.ctx.userinfo
+    if get_apps == nil then
+        get_apps = true
+    end
     local app = nil
     local app_ok, apps = nil
     if cur_userinfo.manager == "super" then
         --可选择多个应用。
-        local dao = appdao:new()
-        app_ok, apps = dao:list(1, 1024)
-        if not app_ok then
-            ngx.log(ngx.ERR, "appdao:list() failed! err:", tostring(apps))
-            apps = {}
+        if get_apps then
+            local dao = appdao:new()
+            app_ok, apps = dao:list(1, 1024)
+            if not app_ok then
+                ngx.log(ngx.ERR, "appdao:list() failed! err:", tostring(apps))
+                apps = {}
+            end
         end
     else
         app = cur_userinfo.app
-        local dao = appdao:new()
-        local ok, appinfo = dao:get_by_app(app)
-        if ok then
-            apps = {appinfo}
-        else
-            apps = {{app=app,appname=app}}
+        if get_apps then
+            local dao = appdao:new()
+            local ok, appinfo = dao:get_by_app(app)
+            if ok then
+                apps = {appinfo}
+            else
+                apps = {{app=app,appname=app}}
+            end
         end
     end
     return app, apps
@@ -47,12 +54,16 @@ end
 function _M.get_url_types()
     -- 1.equal 精确匹配\r\n  2.suffix 后缀匹配\r\n  3.prefix 前缀匹配(最大匹配原则)\r\n  4.regex 正则匹配
     local types = {}
+    local type_maps = {}
     table.insert(types, {id='equal', name="精确匹配"})
     table.insert(types, {id='suffix', name="后缀匹配"})
     table.insert(types, {id='prefix', name="前缀匹配"})
     --table.insert(types, {id='regex', name="正则匹配"})
 
-    return types
+    for _, typeinfo in ipairs(types) do 
+        type_maps[typeinfo.id] = typeinfo.name
+    end
+    return types, type_maps
 end
 
 -- return {'permission id'='permission name'}

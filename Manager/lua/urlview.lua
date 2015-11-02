@@ -49,9 +49,11 @@ function _M.list_render()
             totals = 0
         end
     end
+    local _, type_maps = viewpub.get_url_types()
 
 	template.caching(tmpl_caching)
-	template.render("url_list.html", {errmsg=errmsg, urls=urls, pageNum=pageNum, numPerPage=numPerPage, totals=totals})
+	template.render("url_list.html", {errmsg=errmsg, urls=urls, type_maps=type_maps,
+                    pageNum=pageNum, numPerPage=numPerPage, totals=totals})
 	ngx.exit(0)
 end
 

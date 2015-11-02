@@ -20,7 +20,7 @@ end
 
 local function main_render()
 	template.caching(tmpl_caching)
-	template.render("dwz_base.html", args)
+	template.render("dwz_base.html", {userinfo=ngx.ctx.userinfo})
 	ngx.exit(0)
 end
 

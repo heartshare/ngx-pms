@@ -15,11 +15,7 @@ local login_url = "/passport/login"
 
 local _M = {}
 
-function _M.check()
-	local url = ngx.var.uri
-
-	ngx.log(ngx.INFO, "Cookie: ", ngx.var.http_cookie)
-	
+local function get_and_parse_cookie()
 	local cookie_value = ck.get_cookie()
 	if cookie_value == nil then
 		ngx.log(ngx.WARN, "no rights to access [", url, "], need login!")
@@ -31,20 +27,15 @@ function _M.check()
 	ngx.log(ngx.INFO, "Cookie: ", cookie_value)
 	ngx.ctx.cookie = cookie_value
 	
-	--[[
-	local id, username = ck.parse_cookie(cookie_value)
-	if id == nil then
-		ngx.log(ngx.ERR, "invalid cookie [", tostring(cookie_value), "]")
-		util.redirect(login_url)
-	end
-
-	local dao = userdao:new()
-	local ok, userinfo = dao:get_by_id(id)
-	if ok then
-		--ngx.log(ngx.INFO, "---[", json.dumps(userinfo), "]---")
-		ngx.ctx.userinfo = userinfo
-	end]]
 	local cookie = ck.parse_cookie(cookie_value)
+	return cookie
+end
+
+function _M.check()
+	local url = ngx.var.uri
+
+	ngx.log(ngx.INFO, "Cookie: ", ngx.var.http_cookie)
+	local cookie = get_and_parse_cookie()
 
 	local userinfo = ck.cache_cookie_get(cookie)
 	if userinfo then
@@ -125,6 +116,7 @@ function _M.changepwd_post()
     	args["errmsg"] = "请登录后再修改密码！"
     	_M.login_render(args)
     end
+	local cookie = get_and_parse_cookie()
     local old_pwd_md5 = util.make_pwd(args.old_password)
 	if userinfo.password ~= old_pwd_md5 then
 		ngx.say(dwz.cons_resp(300, "旧密码错误！"))
@@ -139,6 +131,8 @@ function _M.changepwd_post()
 	local dao = userdao:new()
 	local ok = dao:change_pwd(userinfo.id, pwd_md5)
 	if ok then
+		userinfo.password = pwd_md5
+		ck.cache_cookie_set(cookie, json.dumps(userinfo))
 		local msg = "用户【" .. tostring(userinfo.username).. "】密码修改成功！"
 		ngx.log(ngx.INFO, "user [", tostring(userinfo.username), "] success to change password!")
 		ngx.say(dwz.cons_resp(200, msg, {callbackType="closeCurrent"}))

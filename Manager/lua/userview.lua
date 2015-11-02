@@ -263,13 +263,18 @@ function _M.detail_render()
         ngx.exit(0)
     end
 
+    local app = viewpub.get_app_and_apps(false)
+    local permissions = viewpub.get_permissions(app)
+    -- 权限ID->权限名称的映射表，用于WEB页面展示使用。
+    local perm_map = viewpub.perm_map(permissions)
+
     local dao = userdao:new()
     local ok, userinfo = dao:get_by_id(id)    
 
     if ok then
         --ngx.log(ngx.INFO, "---[", json.dumps(userinfo), "]---")
         template.caching(tmpl_caching)
-        template.render("user_detail.html", {userinfo=userinfo})
+        template.render("user_detail.html", {userinfo=userinfo, perm_map=perm_map})
         ngx.exit(0)
     else
         ngx.log(ngx.ERR, "dao:get_by_id(", tostring(id), ") failed err:", tostring(userinfo))

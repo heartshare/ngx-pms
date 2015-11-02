@@ -126,7 +126,9 @@ $(function(){
 					</div>
 					<div class="accordionContent">
 						<ul class="tree treeFolder">
+							{% if userinfo and userinfo.manager == "super" then %}
 							<li><a href="/app/list" target="navTab" fresh="true" rel="app_list">应用管理</a></li>
+							{% end %}
 							<li><a href="/user/list" target="navTab" fresh="true" rel="user_list">用户管理</a></li>
 							<li><a href="/perm/list" target="navTab" fresh="true" rel="perm_list">权限管理</a></li>
 							<li><a href="/role/list" target="navTab" fresh="true" rel="role_list">角色管理</a></li>
