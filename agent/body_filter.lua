@@ -53,19 +53,15 @@ local function get_infobar()
 	--template.caching(tmpl_caching)
 	--local infobar = template.compile(topbar_tpl){username='liuxiaojie'}
 	local username = "NONE"
-	local cookie = ngx.ctx.cookie or ck.get_cookie()
-
-	if cookie ~= nil and cookie ~= "" then
-		local id, username = ck.parse_cookie(cookie)
-		if id == nil then
-			ngx.log(ngx.ERR, "parse cookie (", cookie, ") failed! err:", username)
-			return false
-		end
-		return true, string.format(topbar_tpl, username, logout_url)
-	else
-		ngx.log(ngx.INFO, "do not show infobar, cookie missing!")
+	local userinfo = ngx.ctx.userinfo
+	if userinfo then
+		username = userinfo.username
+	elseif ngx.var.arg_username then
+		username = ngx.var.arg_username
 	end
-	return false
+	ngx.log(ngx.INFO, "user [", username, "] request...")
+	local replace = string.format(topbar_tpl, username, logout_url)
+	return true, replace
 end
 
 local ok, body = get_infobar()

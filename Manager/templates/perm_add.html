@@ -6,7 +6,7 @@
 			{% if permission then %}<input type="hidden" name="update" value="true"/>{% end %}
 			<p class="row_add">
 				<label class="row_add">权限ID：</label>				
-				<input name="id" class="required" type="text" size="30"  
+				<input name="id" class="required alphanumeric" type="text" size="30"  
 				 {% if permission then %} value="{{permission.id}}" readonly="readonly"{% end %}/>
 				<span class="info">&nbsp;&nbsp;字母与下划线</span>
 			</p>

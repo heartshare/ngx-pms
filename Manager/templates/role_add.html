@@ -8,7 +8,7 @@
 			{% end %}
 			<p class="row_add">
 				<label class="row_add">角色ID：</label>				
-				<input name="id" class="required" type="text" size="30"  
+				<input name="id" class="required alphanumeric" type="text" size="30"  
 				 {% if role then %} value="{{role.id}}" readonly="readonly"{% end %}/>
 				<span class="info">&nbsp;&nbsp;字母与下划线</span>
 			</p>
@@ -42,7 +42,7 @@
 					<tr>
 						<td valign="top"><label class="row_add">权限：</label></td>
 						<td valign="top">
-						<select id="permission" name="permission" multiple="multiple" size="8" style="width:120px;height: 120px;">
+						<select id="permission" name="permission" multiple="multiple" size="8" style="width:150px;height: 120px;">
 							{% if role and role.permissions then 
 								for i, permission in ipairs(role.permissions) do %} 
 							  <option value="{{permission}}" >
@@ -61,7 +61,7 @@
 							</table>							
 						</td>
 						<td valign="top">
-						<select id="permission_others" name="permission_others" multiple="multiple" size="8" style="width:100px;height: 120px;">					
+						<select id="permission_others" name="permission_others" multiple="multiple" size="8" style="width:150px;height: 120px;">					
 							{% for i, perminfo in ipairs(permission_others) do %}
 							<option value="{{perminfo.id}}">{{perminfo.name}}</option>
 							{% end %}

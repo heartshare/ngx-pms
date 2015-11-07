@@ -63,7 +63,7 @@
 					<tr>
 						<td valign="top"><label class="row_add">权限：</label></td>
 						<td valign="top">
-						<select id="permission" name="permission" multiple="multiple" size="8" style="width:120px;height: 120px;">
+						<select id="permission" name="permission" multiple="multiple" size="8" style="width:150px;height: 120px;">
 							{% if userinfo and userinfo.user_permissions then 
 								for i, permission in ipairs(userinfo.user_permissions) do %} 
 							  <option value="{{permission}}" >
@@ -82,7 +82,7 @@
 							</table>							
 						</td>
 						<td valign="top">
-						<select id="permission_others" name="permission_others" multiple="multiple" size="8" style="width:100px;height: 120px;">					
+						<select id="permission_others" name="permission_others" multiple="multiple" size="8" style="width:150px;height: 120px;">					
 							{% for i, perminfo in ipairs(permission_others) do %}
 							<option value="{{perminfo.id}}">{{perminfo.name}}</option>
 							{% end %}

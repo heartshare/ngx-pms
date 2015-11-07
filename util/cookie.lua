@@ -75,35 +75,4 @@ function _M.set_cookie(value)
 	return true
 end
 
-function _M.cache_cookie_set(cookie, value)
-	local cookies = ngx.shared.cookies
-	if cookies then
-		local exptime = config.cookie_config.expires + ngx.time()
-		local ok, err = cookies:safe_set(cookie, value, exptime)
-		if not ok then
-			ngx.log(ngx.ERR, "cookies:safe_set(", cookie, ",", value, ") failed! err:", err)
-			return false
-		end
-		return true
-	else
-		ngx.log(ngx.ERR, "lua_shared_dict named 'cookies' not defined!")
-		return false
-	end
-end
-
-function _M.cache_cookie_get(cookie)
-	local cookies = ngx.shared.cookies
-	if cookies then		
-		local value, flags = cookies:get(cookie)
-		if not value then
-			ngx.log(ngx.WARN, "cookies:get(", cookie, ") failed! not exist!")
-			return nil
-		end
-		return value
-	else
-		ngx.log(ngx.ERR, "lua_shared_dict named 'cookies' not defined!")
-		return nil
-	end
-end
-
 return _M

@@ -36,11 +36,12 @@
 <div class="pageContent">
 	<div class="panelBar">
 		<ul class="toolBar">
-			<li><a class="add" href="/user/add" target="dialog" rel="dlg_adduser" height="500" width="480" title="添加用户"><span>添加</span></a></li>
+			<li><a class="add" href="/user/add" target="dialog" rel="dlg_adduser" height="450" width="480" title="添加用户"><span>添加</span></a></li>
 			<li><a class="delete" href="/user/del?id={id}" target="ajaxTodo" title="确定要删除吗?"><span>删除</span></a></li>
-			<li><a class="edit" href="/user/add?id={id}" target="dialog"  height="500" width="480" title="修改用户"><span>修改</span></a></li>
+			<li><a class="edit" href="/user/add?id={id}" target="dialog"  height="450" width="480" title="修改用户"><span>修改</span></a></li>
 			<li class="line">line</li>
-			<li>&nbsp;</li>
+			<li><a class="add" href="/perm_apply" target="ajaxTodo" ><span>应用</span></a></li>
+			<span>注意：修改权限(角色)后，要用户会话过期后才生效，需要立即生效设置请点击左侧【应用】按钮</span>
 		</ul>
 	</div>
 	<table class="table" width="100%" layoutH="112">

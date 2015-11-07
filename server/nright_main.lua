@@ -1,8 +1,11 @@
 local template = require "resty.template"
 local util = require("util.util")
 local ck = require('util.cookie')
-local dao = require("dao.dao")
+local cookiedao = require("dao.cookie_dao")
+local userdao = require('dao.user_dao')
+local urldao = require("dao.url_dao")
 local config = require("config")
+local json = require("util.json")
 local r = require "util.res"
 local error = require('dao.error')
 
@@ -47,8 +50,8 @@ local function login_post()
 		args["error_info"] = r.ERR_PASSWORD_MISSING
 		login_render(args)
 	end
-
-	local ok, userinfo = dao.user_get_by_username(username)
+	local dao = userdao:new()
+	local ok, userinfo = dao:get_by_name(username)
 	if not ok then
 		if userinfo == error.err_data_not_exist then
 			args["error_info"] = r.ERR_USER_NOT_EXIST
@@ -68,34 +71,36 @@ local function login_post()
 
 		local cookie = ck.make_cookie(userinfo)
 		ck.set_cookie(cookie)
+		cookiedao.cookie_set(cookie, userinfo)
 		util.redirect(uri)
 	end
 end
 
 local function logout_post()
 	ck.set_cookie("logouted")
+	local cookie_value = ck.get_cookie()
+	if cookie_value then
+		cookiedao.cookie_del(cookie_value)
+	end
 	util.redirect("/nright/login")
 end
 
-local function get_user_by_cookie(cookie)
-	local id, username = ck.parse_cookie(cookie)
-	if id == nil then
-		ngx.log(ngx.ERR, "parse cookie (", cookie, ") failed! err:", username)
-		return false, username
+local function get_user_by_cookie(cookie_value)
+	local cookie = ck.parse_cookie(cookie_value)
+
+	local ok, userinfo = cookiedao.cookie_get(cookie)
+	if ok then
+		ngx.ctx.userinfo = userinfo
+	else 
+		userinfo = error.err_data_not_exist
 	end
-	local ok, userinfo = dao.user_get_by_id(id)
-	if not ok then
-		if userinfo == error.err_data_not_exist then
-			ngx.log(ngx.WARN, "dao.user_get_by_id(", id, ",", username, ") failed! err:", tostring(userinfo))
-		else
-			ngx.log(ngx.ERR, "dao.user_get_by_id(", id, ",", username, ") failed! err:", tostring(userinfo))
-		end
-	end
+
 	return ok, userinfo
 end
 
 local function get_url_permission(app, url)
-	local ok, url_perm = dao.url_perm_get(app, url)
+	local dao = urldao:new()
+	local ok, url_perm = dao:url_perm_get(app, url)
 	if not ok then
 		return ok, url_perm 
 	end
@@ -124,7 +129,10 @@ local function right_check()
 	local ok, userinfo = get_user_by_cookie(cookie)
 	if not ok then
 		if userinfo == error.err_data_not_exist then
-			ngx.exit(ngx.HTTP_BAD_REQUEST)
+			ngx.log(ngx.ERR, "cookie [", cookie, "] not exist in database!")
+			ngx.status = ngx.HTTP_UNAUTHORIZED
+			ngx.say("session-timeout")
+			ngx.exit(0)
 		else
 			ngx.exit(ngx.HTTP_INTERNAL_SERVER_ERROR)
 		end
@@ -137,21 +145,31 @@ local function right_check()
 		-- 有权限。
 		if userinfo.permissions[url_permission] then
 			ngx.log(ngx.INFO, "user [", username, "] have [", url_permission, '] permission to access: ', uri)
-			ngx.exit(ngx.HTTP_OK)
+			ngx.status = ngx.HTTP_OK
+			ngx.say(json.dumps(userinfo))
+			ngx.exit(0)
 		else --没有权限 
 			ngx.log(ngx.ERR, "user [", username, "] have no [", url_permission, '] permission to access: ', uri)
-			ngx.exit(ngx.HTTP_UNAUTHORIZED)
+			ngx.status = ngx.HTTP_UNAUTHORIZED
+			ngx.say(json.dumps(userinfo))
+			ngx.exit(0)
 		end
 	else 
 		if url_permission == error.err_data_not_exist then
 			ngx.log(ngx.INFO, "user [", username, "] check right for uri [", uri, "] ok, uri not exist!")
-			ngx.exit(ngx.HTTP_OK)
+			ngx.status = ngx.HTTP_OK
+			ngx.say(json.dumps(userinfo))
+			ngx.exit(0)
 		else
 			ngx.log(ngx.ERR, "user [", username, "] check right for uri [", uri, "] failed, err:", tostring(url_permission))
-			ngx.exit(ngx.HTTP_INTERNAL_SERVER_ERROR)
+			ngx.status = ngx.HTTP_INTERNAL_SERVER_ERROR
+			ngx.say(json.dumps(userinfo))
+			ngx.exit(0)
 		end
 	end
-	ngx.exit(ngx.HTTP_UNAUTHORIZED)
+	ngx.status = ngx.HTTP_UNAUTHORIZED
+	ngx.say(json.dumps(userinfo))
+	ngx.exit(0)
 end
 
 local function no_access_page()

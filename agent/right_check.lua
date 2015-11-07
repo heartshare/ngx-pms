@@ -1,5 +1,6 @@
 local config = require("config")
 local util = require("util.util")
+local json = require("util.json")
 local ck = require('util.cookie')
 
 local login_url = config.login_url or "/nright/login"
@@ -7,10 +8,15 @@ local no_access_page = config.no_access_page or "/nright/no_access_page"
 local right_check_url = config.right_check_url or "/nright/right_check"
 
 
-local function uri_args_as_args()
+local function uri_args_as_args(ext_args)
 	local args = ngx.req.get_uri_args()
 	local full_uri = (ngx.var.scheme or "http") .. "://" .. ngx.var.host .. ngx.var.uri
 	args["uri"] = full_uri
+	if ext_args and type(ext_args) == 'table' then
+		for k, v in pairs(ext_args) do 
+			args[k] = v
+		end
+	end
 	return ngx.encode_args(args)
 end
 
@@ -26,7 +32,7 @@ local function check_uri_permission(app, uri, cookie)
         if res then
             ngx.log(ngx.INFO, "check permission request:", url, ", status:", res.status, ",body:", tostring(res.body))
 
-            if res.status == 200 then
+            if res.status < 500 then
                 break
             else
                 ngx.log(ngx.ERR, string.format("request [curl -v %s] failed! status:%d", url, res.status))
@@ -38,10 +44,25 @@ local function check_uri_permission(app, uri, cookie)
     if not res then
         return false, 500
     end
+
+
     if res.status ~= 200 then
-        return false, res.status
+    	local body = res.body or ""
+    	body = util.trim(body)
+    	local userinfo, err = json.loads(body)
+	    if err then
+	    	userinfo = body
+	    end
+
+        return false, res.status, userinfo
+    else 
+    	local userinfo, err = json.loads(res.body)
+	    if err then
+	    	ngx.log(ngx.ERR, "json.loads(", res.body, ") failed! err:", err)
+	    end   
+
+    	return true, res.status, userinfo
     end
-    return true, res.status
 end
 
 local function check_right()
@@ -66,13 +87,27 @@ local function check_right()
 	ngx.ctx.cookie = cookie_value
 	
 	-- TODO: 取出COOKIE
-	local ok, status = check_uri_permission(app, url, cookie_value)
+	local ok, status, userinfo = check_uri_permission(app, url, cookie_value)
 	ngx.log(ngx.INFO, " check_uri_permission(app=", tostring(app),
-		",url=", tostring(url), ",cookie=", tostring(cookie_value), ")=", ok, ",", tostring(status))
-	if not ok then
+		",url=", tostring(url), ",cookie=", tostring(cookie_value), ")=", 
+		ok, ",", tostring(status), ", res.body:", tostring(userinfo))
+
+	local username = nil
+	if type(userinfo) == 'table' and userinfo.username then
+		--ngx.log(ngx.INFO, "-------------------------:", json.dumps(userinfo))
+		ngx.ctx.userinfo = userinfo
+		username = userinfo.username
+	end
+	if ok then
+		---
+	else
 		-- no permission.
-		if no_access_page and status == ngx.HTTP_UNAUTHORIZED then
-			util.redirect(no_access_page, uri_args_as_args())
+		if status == ngx.HTTP_UNAUTHORIZED then
+			if userinfo == "session-timeout" then
+				util.redirect(login_url, uri_args_as_args())
+			else 
+				util.redirect(no_access_page, uri_args_as_args({username=username}))
+			end
 		else
 			ngx.status = status
 			ngx.send_headers()

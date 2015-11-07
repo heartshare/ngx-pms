@@ -89,4 +89,33 @@ function _M:delete_by_id(id)
     return self.dao:delete_by(where)
 end
 
+function _M:url_perm_get(app, url)
+    app = ngx.quote_sql_str(app)
+    url = ngx.quote_sql_str(url)
+
+    local wheres = {}
+    -- 优先查找精确匹配。
+    table.insert(wheres, "where app=" .. app .. " and type='equal' and url = " .. url)
+    -- 然后查找后缀匹配的。
+    table.insert(wheres, "where app=" .. app .. " and type='suffix' and url = right(" .. url .. ", length(url)) order by url_len desc limit 1")
+    -- 然后查找前缀匹配的。
+    table.insert(wheres, "where app=" .. app .. " and type='prefix' and url = substr(" .. url .. ", 1, length(url)) order by url_len desc limit 1")
+
+    local ok, obj, where_ = nil,nil
+    for i, where in ipairs(wheres) do
+        where_ = where
+        ok, obj = self.dao:get_by(where)
+        if ok then
+            return ok, obj
+        elseif obj ~= error.err_data_not_exist then --出错
+            ngx.log(ngx.ERR, "url_dao.get_by(" .. tostring(where) .. ") failed! err:", tostring(obj))
+            return ok, obj
+        end
+    end
+    if not ok then
+        ngx.log(ngx.ERR, "url_dao.get_by(" .. tostring(where_) .. ") failed! err:", tostring(obj))
+    end
+    return ok, obj
+end
+
 return  _M

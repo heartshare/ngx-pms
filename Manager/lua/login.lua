@@ -7,7 +7,7 @@ local config = require("config")
 local util = require("util.util")
 local ck = require('util.cookie')
 local userdao = require('dao.user_dao')
-local json = require("util.json")
+local cookiedao = require("dao.cookie_dao")
 local r = require "util.res"
 local dwz = require("Manager.lua.dwzutil")
 
@@ -16,6 +16,7 @@ local login_url = "/passport/login"
 local _M = {}
 
 local function get_and_parse_cookie()
+	local url = ngx.var.uri
 	local cookie_value = ck.get_cookie()
 	if cookie_value == nil then
 		ngx.log(ngx.WARN, "no rights to access [", url, "], need login!")
@@ -32,16 +33,14 @@ local function get_and_parse_cookie()
 end
 
 function _M.check()
-	local url = ngx.var.uri
-
 	ngx.log(ngx.INFO, "Cookie: ", ngx.var.http_cookie)
 	local cookie = get_and_parse_cookie()
 
-	local userinfo = ck.cache_cookie_get(cookie)
-	if userinfo then
-		ngx.ctx.userinfo = json.loads(userinfo)
+	local ok, userinfo = cookiedao.cookie_get(cookie)
+	if ok then
+		ngx.ctx.userinfo = userinfo
 	else
-		ngx.log(ngx.ERR, "cache_cookie_get(", tostring(cookie), ") failed! nil")
+		ngx.log(ngx.ERR, "cookie_get(", tostring(cookie), ") failed! err:", userinfo)
 		util.redirect(login_url)
 	end
 end
@@ -81,7 +80,7 @@ function _M.login_post()
 
 		local cookie = ck.make_cookie(userinfo)
 		ck.set_cookie(cookie)
-		ck.cache_cookie_set(cookie, json.dumps(userinfo))
+		cookiedao.cookie_set(cookie, userinfo)
 
 		util.redirect(args.uri)
 	else 
@@ -99,6 +98,7 @@ function _M.logout_post()
 	end
 	ngx.ctx.userinfo = nil
 	ck.set_cookie("logouted")
+	-- TODO: cache_cookie_clear
     _M.login_render({username=username})
 end
 
@@ -132,7 +132,7 @@ function _M.changepwd_post()
 	local ok = dao:change_pwd(userinfo.id, pwd_md5)
 	if ok then
 		userinfo.password = pwd_md5
-		ck.cache_cookie_set(cookie, json.dumps(userinfo))
+		cookiedao.cookie_set(cookie, userinfo)
 		local msg = "用户【" .. tostring(userinfo.username).. "】密码修改成功！"
 		ngx.log(ngx.INFO, "user [", tostring(userinfo.username), "] success to change password!")
 		ngx.say(dwz.cons_resp(200, msg, {callbackType="closeCurrent"}))

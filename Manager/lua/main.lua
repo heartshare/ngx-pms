@@ -11,7 +11,9 @@ local perm = require("Manager.lua.permview")
 local role = require("Manager.lua.roleview")
 local url = require("Manager.lua.urlview")
 local login = require("Manager.lua.login")
+local dwz = require("Manager.lua.dwzutil")
 local util = require("util.util")
+local cookiedao = require("dao.cookie_dao")
 local tmpl_caching = config.tmpl_caching
 if tmpl_caching == nil then
 	tmpl_caching = false
@@ -24,6 +26,10 @@ local function main_render()
 	ngx.exit(0)
 end
 
+local function permission_apply()
+	local ok, err = cookiedao.clean_userinfo()
+	ngx.say(dwz.cons_resp(200, "权限应用成功！"))
+end
 
 local uri = ngx.var.uri
 ngx.header['Content-Type'] = "text/html"
@@ -34,6 +40,7 @@ end
 
 local router = {
 	["/"] = main_render,
+	["/perm_apply"] = permission_apply,
 	["/app/list"] = app.list_render,
 	["/app/add"] = app.add_render,
 	["/app/add_post"] = app.add_post,
