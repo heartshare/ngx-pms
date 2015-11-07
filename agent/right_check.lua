@@ -1,11 +1,14 @@
-local config = require("config")
+--[[
+author: jie123108@163.com
+date: 20151017
+]]
 local util = require("util.util")
 local json = require("util.json")
 local ck = require('util.cookie')
 
-local login_url = config.login_url or "/nright/login"
-local no_access_page = config.no_access_page or "/nright/no_access_page"
-local right_check_url = config.right_check_url or "/nright/right_check"
+local login_url = "/nright/login"
+local no_access_page = "/nright/no_access_page"
+local right_check_url = "/nright/right_check"
 
 
 local function uri_args_as_args(ext_args)

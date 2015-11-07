@@ -1,12 +1,13 @@
-local config = require("config")
-local util = require("util.util")
-local ck = require('util.cookie')
+--[[
+author: jie123108@163.com
+date: 20151017
+]]
 
-local login_url = config.login_url or "/nright/login"
-local logout_url = config.logout_url or "/nright/logout"
+local login_url = "/nright/login"
+local logout_url = "/nright/logout"
 local login_post_url = "/nright/login_post"
-local no_access_page = config.no_access_page or "/nright/no_access_page"
-local right_check_url = config.right_check_url or "/nright/right_check"
+local no_access_page = "/nright/no_access_page"
+local right_check_url = "/nright/right_check"
 
 local ignore_list = {login_url, login_post_url, right_check_url}
 
@@ -43,7 +44,7 @@ local topbar_tpl = [[
 	background-position: top;
 	border: thin dashed #0033FF;">
   <tr>
-  	<td align="left">&nbsp;&nbsp;NRight System</td>
+  	<td align="left">&nbsp;&nbsp;Nginx Permission System</td>
     <td align="right">&nbsp;&nbsp;USER: <a href="#" target="_blank">%s</a> | <a href="%s" target="_self">Logout</a>&nbsp;&nbsp;&nbsp;&nbsp;</td>
   </tr>
 </table>
