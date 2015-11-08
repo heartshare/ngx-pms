@@ -7,7 +7,9 @@ local _M = {}
 local sys_permissions = {{id="ALLOW_ALL", name="所有人可访问"},
                          {id="DENY_ALL", name="所有人不可访问"},}
 -- 获取用于查询的app及用于前端显示的app列表。
-function _M.get_app_and_apps(get_apps)
+-- get_apps: 同时返回所有可用app
+-- get_public: apps里面添加public
+function _M.get_app_and_apps(get_apps, get_public)
     local cur_userinfo = ngx.ctx.userinfo
     if get_apps == nil then
         get_apps = true
@@ -35,6 +37,9 @@ function _M.get_app_and_apps(get_apps)
                 apps = {{app=app,appname=app}}
             end
         end
+    end
+    if apps and get_public then
+        table.insert(apps, {app="public", appname="公共"})
     end
     return app, apps
 end

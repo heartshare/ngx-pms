@@ -84,10 +84,11 @@ function _M.add_render()
         end
     end
     
-    local app, apps = viewpub.get_app_and_apps()
+    local app, apps = viewpub.get_app_and_apps(true, true)
 	local permissions = viewpub.get_permissions(app)
     -- 权限ID->权限名称的映射表，用于WEB页面展示使用。
-    local perm_map = viewpub.perm_map(permissions)
+    local permissions_all = viewpub.get_permissions()
+    local perm_map = viewpub.perm_map(permissions_all)
 
     local dao = roledao:new()
     local role_ok, roles = dao:list(app, 1, 1024)
