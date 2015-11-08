@@ -4,6 +4,8 @@ local error = require('dao.error')
 
 local _M = {}
 
+local sys_permissions = {{id="ALLOW_ALL", name="所有人可访问"},
+                         {id="DENY_ALL", name="所有人不可访问"},}
 -- 获取用于查询的app及用于前端显示的app列表。
 function _M.get_app_and_apps(get_apps)
     local cur_userinfo = ngx.ctx.userinfo
@@ -37,7 +39,7 @@ function _M.get_app_and_apps(get_apps)
     return app, apps
 end
 
-function _M.get_permissions(app)
+function _M.get_permissions(app, get_sys_perms)
     local dao = permdao:new()
     local perm_ok, permissions = dao:list(app, 1, 1024)
     if not perm_ok then
@@ -47,6 +49,11 @@ function _M.get_permissions(app)
             ngx.log(ngx.ERR, "permdao:list(", tostring(app), ") failed! err:", tostring(permissions))
         end
         permissions = {}
+    end
+    if get_sys_perms then
+        for _, perm in ipairs(sys_permissions) do 
+            table.insert(permissions, perm)
+        end
     end
     return permissions
 end
@@ -71,6 +78,11 @@ function _M.perm_map(all_permissions)
     local map = {}
     if all_permissions then
         for i, permission in ipairs(all_permissions) do
+            map[permission.id] = permission.name
+        end
+    end
+    if sys_permissions then
+        for i, permission in ipairs(sys_permissions) do
             map[permission.id] = permission.name
         end
     end

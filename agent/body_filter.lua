@@ -5,11 +5,13 @@ date: 20151017
 
 local login_url = "/nright/login"
 local logout_url = "/nright/logout"
+local change_pwd_url = "/nright/change_pwd"
+local change_pwd_post_url = "/nright/change_pwd_post"
 local login_post_url = "/nright/login_post"
 local no_access_page = "/nright/no_access_page"
 local right_check_url = "/nright/right_check"
 
-local ignore_list = {login_url, login_post_url, right_check_url}
+local ignore_list = {login_url, login_post_url, right_check_url, change_pwd_url, change_pwd_post_url}
 
 local function is_ignore_url(url)
 	if ignore_list == nil then
@@ -36,16 +38,33 @@ if is_ignore_url(ngx.var.uri) then
 end
 
 local topbar_tpl = [[
-<table width="100%%" border="0" cellspacing="1" cellpadding="0" style="
+<style type="text/css">
+<!--
+.topbar {
 	top: 0px;
 	height:25px;
-	background-color: #CED1FD;
+	background-color: #E5E5E5;
 	font-size: 12px;
 	background-position: top;
-	border: thin dashed #0033FF;">
+	border-top-width: thin;
+	border-right-width: thin;
+	border-bottom-width: thin;
+	border-left-width: thin;
+	border-top-style: none;
+	border-right-style: none;
+	border-bottom-style: solid;
+	border-left-style: none;
+	border-top-color: #0033FF;
+	border-right-color: #0033FF;
+	border-bottom-color: #000000;
+	border-left-color: #0033FF;
+}
+-->
+</style>
+<table width="100%%" border="0" cellspacing="1" cellpadding="0" class="topbar">
   <tr>
   	<td align="left">&nbsp;&nbsp;Nginx Permission System</td>
-    <td align="right">&nbsp;&nbsp;USER: <a href="#" target="_blank">%s</a> | <a href="%s" target="_self">Logout</a>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+    <td align="right">&nbsp;&nbsp;USER: %s| <a href="%s" target="_blank">Change Password</a> | <a href="%s" target="_self">Logout</a>&nbsp;&nbsp;&nbsp;&nbsp;</td>
   </tr>
 </table>
 ]]
@@ -61,7 +80,7 @@ local function get_infobar()
 		username = ngx.var.arg_username
 	end
 	ngx.log(ngx.INFO, "user [", username, "] request...")
-	local replace = string.format(topbar_tpl, username, logout_url)
+	local replace = string.format(topbar_tpl, username, change_pwd_url, logout_url)
 	return true, replace
 end
 

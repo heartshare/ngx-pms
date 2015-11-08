@@ -14,6 +14,21 @@ if tmpl_caching == nil then
 	tmpl_caching = false
 end
 
+
+local function get_user_by_cookie(cookie_value)
+	local cookie = ck.parse_cookie(cookie_value)
+
+	local ok, userinfo = cookiedao.cookie_get(cookie)
+	if ok then
+		ngx.ctx.userinfo = userinfo
+	else 
+		userinfo = error.err_data_not_exist
+	end
+
+	return ok, userinfo
+end
+
+
 local function login_render(args)
 	ngx.header['Content-Type'] = "text/html"
 	
@@ -76,26 +91,87 @@ local function login_post()
 	end
 end
 
+
+local function change_pwd_render(args)
+	ngx.header['Content-Type'] = "text/html"
+	
+	template.caching(tmpl_caching)
+	template.render("change_pwd.html", args)
+	ngx.exit(0)
+end
+
+local function change_pwd_page()
+	-- set $template_root /path/to/templates;
+	ngx.header['Content-Type'] = "text/html"
+	local args = ngx.req.get_uri_args()
+	change_pwd_render(args)
+end
+
+
+local function change_pwd_post()
+	ngx.header['Content-Type'] = "text/html"
+	ngx.req.read_body()
+	local args = ngx.req.get_post_args()
+	local cookie = ck.get_cookie()
+	if not cookie then -- 没有登录，不能修改密码
+		ngx.log(ngx.ERR, "change password failed！cookie not found!")
+		util.redirect("/nright/login")
+	end
+
+	local ok, userinfo = get_user_by_cookie(cookie)
+	if not ok then
+		if userinfo == error.err_data_not_exist then
+			ngx.log(ngx.ERR, "cookie [", cookie, "] not exist in database!")
+			util.redirect("/nright/login")
+		else
+			ngx.exit(ngx.HTTP_INTERNAL_SERVER_ERROR)
+		end
+	end
+	local old_password = args.old_password
+	local new_password = args.new_password
+	local re_new_password = args.re_new_password
+	if old_password == nil or old_password == "" then
+		args["error_info"] = r.ERR_OLDPWD_MISSING
+		change_pwd_render(args)
+	end
+	if new_password == nil or new_password == "" then
+		args["error_info"] = r.ERR_NEWPWD_MISSING
+		change_pwd_render(args)
+	end
+	if new_password ~= re_new_password then
+		args["error_info"] = r.ERR_TOWPWD_NOT_EQUALS
+		change_pwd_render(args)
+	end
+
+	-- Check the old password.
+	old_password = util.make_pwd(old_password)
+	if old_password ~= userinfo.password then
+		args["error_info"] = r.ERR_OLDPWD_ERROR
+		change_pwd_render(args)
+	end
+
+	local update_by = {id=userinfo.id}
+	local values = {password=util.make_pwd(new_password), update_time=ngx.time()}
+	local dao = userdao:new()
+	local ok, err = dao:update(values, update_by)
+	if not ok then
+		ngx.log(ngx.ERR, "uerdao:update(", json.dumps(values), ",", 
+					json.dumps(update_by), ") failed! err:", tostring(err))
+		args["error_info"] = r.ERR_SYSTEM_ERROR
+		change_pwd_render(args)
+	else -- 密码修改成功。
+		args["success_info"] = r.CHANGE_PWD_SUCC
+		change_pwd_render(args)
+	end
+end
+
 local function logout_post()
-	ck.set_cookie("logouted")
 	local cookie_value = ck.get_cookie()
 	if cookie_value then
 		cookiedao.cookie_del(cookie_value)
 	end
+	ck.set_cookie("logouted")
 	util.redirect("/nright/login")
-end
-
-local function get_user_by_cookie(cookie_value)
-	local cookie = ck.parse_cookie(cookie_value)
-
-	local ok, userinfo = cookiedao.cookie_get(cookie)
-	if ok then
-		ngx.ctx.userinfo = userinfo
-	else 
-		userinfo = error.err_data_not_exist
-	end
-
-	return ok, userinfo
 end
 
 local function get_url_permission(app, url)
@@ -142,8 +218,19 @@ local function right_check()
 	local ok, url_permission = get_url_permission(app, uri)
 	ngx.log(ngx.INFO, "app [",tostring(app),"] url [", tostring(uri), "] permission: ", tostring(url_permission))
 	if ok then
-		-- 有权限。
-		if userinfo.permissions[url_permission] then
+		if url_permission == "ALLOW_ALL" then -- 所有人可访问
+			ngx.log(ngx.INFO, "url [", app, ".", uri, "] permission is [", 
+					url_permission, '], allow all user to access!')
+			ngx.status = ngx.HTTP_OK
+			ngx.say(json.dumps(userinfo))
+			ngx.exit(0)
+		elseif url_permission == "DENY_ALL" then --所有人不可访问
+			ngx.log(ngx.INFO, "url [", app, ".", uri, "] permission is [", 
+					url_permission, '], not allow any user to access!')
+			ngx.status = ngx.HTTP_UNAUTHORIZED
+			ngx.say(json.dumps(userinfo))
+			ngx.exit(0)
+		elseif userinfo.permissions[url_permission] then -- 有权限。
 			ngx.log(ngx.INFO, "user [", username, "] have [", url_permission, '] permission to access: ', uri)
 			ngx.status = ngx.HTTP_OK
 			ngx.say(json.dumps(userinfo))
@@ -184,16 +271,19 @@ end
 
 ngx.header['Content-Type'] = "text/html"
 local uri = ngx.var.uri
-if uri == "/nright/right_check" then
-    right_check()
-elseif uri == "/nright/login" then
-    login_page()
-elseif uri == "/nright/login_post" then
-    login_post()
-elseif uri == "/nright/logout" then
-	logout_post()
-elseif uri == "/nright/no_access_page" then
-	no_access_page()
+local router = {
+	["/nright/right_check"] = right_check,
+	["/nright/login"] = login_page,
+	["/nright/login_post"] = login_post,
+	["/nright/change_pwd"] = change_pwd_page,
+	["/nright/change_pwd_post"] = change_pwd_post,
+	["/nright/logout"] = logout_post,
+	["/nright/no_access_page"] = no_access_page,
+}
+
+if router[uri] then
+	router[uri]()
 else
+	ngx.log(ngx.ERR, "page [", uri, "] not found!")
 	ngx.exit(404)
 end

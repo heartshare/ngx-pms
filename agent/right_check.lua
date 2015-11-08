@@ -76,7 +76,7 @@ local function check_right()
 	end
 	local app = ngx.var.app or "def"
 
-	ngx.log(ngx.INFO, "Cookie: ", ngx.var.http_cookie)
+	ngx.log(ngx.INFO, "Cookie: ", ngx.var.http_cookie, ", app=", app)
 	
 	local cookie_value = ck.get_cookie()
 	if cookie_value == nil then

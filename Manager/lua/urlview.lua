@@ -71,7 +71,8 @@ function _M.add_render()
         end
     end
     local app, apps = viewpub.get_app_and_apps()
-    local permissions = viewpub.get_permissions(app)
+    local get_sys_perms = true
+    local permissions = viewpub.get_permissions(app, get_sys_perms)
     local types = viewpub.get_url_types()
 
 	template.caching(tmpl_caching)
