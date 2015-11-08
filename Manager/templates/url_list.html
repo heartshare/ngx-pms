@@ -12,11 +12,13 @@
 <div class="pageContent">
 	<div class="panelBar">
 		<ul class="toolBar">
+			{% if cur_manager == "admin" then %}
 			<li><a class="add" href="/url/add" target="dialog" rel="dlg_addurl" width="480" title="添加URL"><span>添加</span></a></li>
 			<li><a class="delete" href="/url/del?id={id}" target="ajaxTodo" title="确定要删除吗?"><span>删除</span></a></li>
 			<li><a class="edit" href="/url/add?id={id}" target="dialog" width="480" title="修改URL"><span>修改</span></a></li>
 			<li class="line">line</li>
 			<li>&nbsp;</li>
+			{% end %}
 		</ul>
 	</div>
 	<table class="table" width="100%" layoutH="75">

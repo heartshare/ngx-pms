@@ -49,9 +49,13 @@ function _M.list_render()
             totals = 0
         end
     end
-
+    local cur_manager = nil
+    if ngx.ctx.userinfo then
+        cur_manager = ngx.ctx.userinfo.manager
+    end
 	template.caching(tmpl_caching)
-	template.render("perm_list.html", {errmsg=errmsg, perms=permissions, pageNum=pageNum, numPerPage=numPerPage, totals=totals})
+	template.render("perm_list.html", {errmsg=errmsg, perms=permissions, cur_manager=cur_manager,
+                    pageNum=pageNum, numPerPage=numPerPage, totals=totals})
 	ngx.exit(0)
 end
 

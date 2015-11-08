@@ -38,6 +38,8 @@ local function get_sql_value(v, type_)
             else 
                 v = 0 
             end
+        elseif type(v) == 'string' then
+            v = ngx.quote_sql_str(v)
         end
         return v
     end
@@ -222,16 +224,16 @@ end
 
 function _M:save(values)
     local sql = get_insert_sql(self.tablename, self.table_meta, values)
-    local effects, err, errno = mysql_util.execute(sql, self.connection)
+    local effects, insert_id, errno = mysql_util.execute(sql, self.connection)
     if effects == -1 then
-        ngx.log(ngx.ERR, "execute [", sql, "] failed! err:", tostring(err))
+        ngx.log(ngx.ERR, "execute [", sql, "] failed! err:", tostring(insert_id))
         if errno == 1062 then
             return false, error.err_data_exist
         else
-            return false, err
+            return false, insert_id
         end
     end
-    return true
+    return true, insert_id
 end
 
 function _M:saveOrUpdate(values)

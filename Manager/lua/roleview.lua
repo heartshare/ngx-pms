@@ -50,9 +50,13 @@ function _M.list_render()
             totals = 0
         end
     end
-
+    local cur_manager = nil
+    if ngx.ctx.userinfo then
+        cur_manager = ngx.ctx.userinfo.manager
+    end
 	template.caching(tmpl_caching)
-	template.render("role_list.html", {errmsg=errmsg, roles=roles, pageNum=pageNum, numPerPage=numPerPage, totals=totals})
+	template.render("role_list.html", {errmsg=errmsg, roles=roles, cur_manager=cur_manager,
+                    pageNum=pageNum, numPerPage=numPerPage, totals=totals})
 	ngx.exit(0)
 end
 

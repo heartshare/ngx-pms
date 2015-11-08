@@ -50,9 +50,11 @@ function _M.list_render()
         end
     end
     local _, type_maps = viewpub.get_url_types()
-
+    if ngx.ctx.userinfo then
+        cur_manager = ngx.ctx.userinfo.manager
+    end
 	template.caching(tmpl_caching)
-	template.render("url_list.html", {errmsg=errmsg, urls=urls, type_maps=type_maps,
+	template.render("url_list.html", {errmsg=errmsg, urls=urls, type_maps=type_maps,cur_manager=cur_manager,
                     pageNum=pageNum, numPerPage=numPerPage, totals=totals})
 	ngx.exit(0)
 end

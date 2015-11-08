@@ -134,7 +134,7 @@ function _M.execute(sql, connection)
         return -1, res, errno
     end
 
-    return res.affected_rows
+    return res.affected_rows, res.insert_id
 end
 
 function _M.execute_bat(sql, connection)

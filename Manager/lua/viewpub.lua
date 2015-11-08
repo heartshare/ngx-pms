@@ -39,12 +39,18 @@ function _M.get_app_and_apps(get_apps, get_public)
         end
     end
     if apps and get_public then
-        table.insert(apps, {app="public", appname="公共"})
+        table.insert(apps, 1, {app="public", appname="公共"})
     end
     return app, apps
 end
 
 function _M.get_permissions(app, get_sys_perms)
+    local cur_userinfo = ngx.ctx.userinfo
+    -- 超级管理员，不使用权限信息。
+    if cur_userinfo.manager == "super" then
+        return {}
+    end
+
     local dao = permdao:new()
     local perm_ok, permissions = dao:list(app, 1, 1024)
     if not perm_ok then

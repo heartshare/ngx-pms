@@ -132,12 +132,12 @@ function _M.add_post()
     	if tx_ok then 
     		tx_ok, tx_err = mysql.tx_rollback(connection)
     	end
+        mysql.connection_put(connection)
         if err == error.err_data_exist then
             ngx.say(dwz.cons_resp(300, "保存应用信息时出错了: 数据重复"))
         else
     	   ngx.say(dwz.cons_resp(300, "保存应用信息时出错了:" .. tostring(err)))
         end
-    	mysql.connection_put(connection)
     	ngx.exit(0)
     end
     local dao = userdao:new(connection)
@@ -147,12 +147,12 @@ function _M.add_post()
     	if tx_ok then 
     		tx_ok, tx_err = mysql.tx_rollback(connection)
     	end
+        mysql.connection_put(connection)
     	if err == error.err_data_exist then
             ngx.say(dwz.cons_resp(300, "保存应用信息时出错了: 数据重复"))
         else
            ngx.say(dwz.cons_resp(300, "保存应用管理员信息时出错了:" .. tostring(err)))
         end
-    	mysql.connection_put(connection)
     	ngx.exit(0)
     end
     tx_ok, tx_err = mysql.tx_commit(connection)

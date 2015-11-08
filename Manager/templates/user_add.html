@@ -34,30 +34,25 @@
 				<select class="combox" name="app" style="width: 200px;">
 					{% for i, appinfo in ipairs(apps) do %}
 			      		<option value="{{appinfo.app}}" 
-						{% if userinfo and userinfo.app == appinfo.app then %} selected="selected" {% end %}>{{appinfo.appname}}</option>
+						{% 
+						local select01 = userinfo and userinfo.app == appinfo.app
+						if select01 then %} 
+						selected="selected" 
+						{% end %}>
+						{{appinfo.appname}}</option>
 			      	{% end %}
 				</select>
 			</p>
+			{%	if cur_manager == "admin" then %}
 			<p class="row_add">
 				<label class="row_add">角色:</label>
-				<select class="combox" name="role_id" style="width: 200px;">
+				<select class="combox" name="role_id" disabled="disabled" style="width: 200px;">
 					{% for i, roleinfo in ipairs(roles) do %}
 			      		<option value="{{roleinfo.id}}"
 			      		{% if userinfo and userinfo.role_id == roleinfo.id then %} selected="selected" {% end %}>{{roleinfo.name}}</option>
 			      	{% end %}
 				</select>
-			</p>
-			<!--
-			<p class="row_add">
-				<label class="row_add">密码：</label>
-				<input id="password" name="password" class="required alphanumeric" type="password" size="30"  minlength="4" maxlength="24"/>
-			</p>
-			<p class="row_add">
-				<label class="row_add">确认密码：</label>
-				<input id="repassword" name="repassword" class="required" type="password" size="30" equalto="#password"/>
-			</p>
-			-->
-			
+			</p>			
 			<p class="row_add">
 				<table >
 					<tr>
@@ -91,6 +86,7 @@
 					</tr>
 				</table>				
 			</p>
+			{% end %}
 		</div>
 		<div class="formBar">
 			<ul>
