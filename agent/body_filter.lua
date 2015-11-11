@@ -51,11 +51,11 @@ local topbar_tpl = [[
 	border-bottom-width: thin;
 	border-left-width: thin;
 	border-top-style: none;
-	border-right-style: none;
+	border-right-style: solid;
 	border-bottom-style: solid;
 	border-left-style: none;
 	border-top-color: #0033FF;
-	border-right-color: #0033FF;
+	border-right-color: #000000;
 	border-bottom-color: #000000;
 	border-left-color: #0033FF;
 }

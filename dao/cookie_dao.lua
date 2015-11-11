@@ -12,6 +12,9 @@ local cachename = "cookies"
 
 local _M = {}
 
+-- Cookie 信息保存为两种：
+-- ck:${COOKIE} ==> userid
+-- user:${userid} ==> userinfo
 
 function _M.cookie_set(cookie, userinfo)
 	local cache = ngx.shared[cachename]
@@ -31,6 +34,8 @@ function _M.cookie_set(cookie, userinfo)
 			ngx.log(ngx.ERR, "cache:safe_set(", key_userinfo, ",", userinfo, ") failed! err:", err)
 			return false
 		end
+		ngx.log(ngx.INFO, "cookie_set(cookie=", cookie, ",userinfo=", userinfo, 
+							",exptime=",exptime, ") success!")
 		return true
 	else
 		ngx.log(ngx.ERR, "lua_shared_dict named '", cachename, "' not defined!")
@@ -76,9 +81,10 @@ function _M.cookie_get(cookie)
 			return false, "not-exist"
 		end
 		local userid = tonumber(value)
-		
+		local key_userinfo = "user:" .. userid
 		local value, flags = cache:get(key_userinfo)
 		if not value then
+			ngx.log(ngx.INFO, "-------------- 11111111 ----------------------")
 			return get_userinfo_from_db(cache, userid)
 		end
 		local userinfo, err = json.loads(value)
@@ -86,6 +92,9 @@ function _M.cookie_get(cookie)
 			ngx.log(ngx.ERR, "json.loads(", value, ") failed! err:", err)
 			return get_userinfo_from_db(cache, userid)
 		else
+			-- 重新设置值，以延长过期时间
+			_M.cookie_set(cookie, userinfo)
+
 			return true, userinfo
 		end
 	else

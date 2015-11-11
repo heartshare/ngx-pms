@@ -57,14 +57,14 @@ local function check_uri_permission(app, uri, cookie)
 	    	userinfo = body
 	    end
 
-        return false, res.status, userinfo
+        return false, res.status, userinfo, res.headers
     else 
     	local userinfo, err = json.loads(res.body)
 	    if err then
 	    	ngx.log(ngx.ERR, "json.loads(", res.body, ") failed! err:", err)
 	    end   
 
-    	return true, res.status, userinfo
+    	return true, res.status, userinfo, res.headers
     end
 end
 
@@ -90,7 +90,7 @@ local function check_right()
 	ngx.ctx.cookie = cookie_value
 	
 	-- TODO: 取出COOKIE
-	local ok, status, userinfo = check_uri_permission(app, url, cookie_value)
+	local ok, status, userinfo, headers = check_uri_permission(app, url, cookie_value)
 	ngx.log(ngx.INFO, " check_uri_permission(app=", tostring(app),
 		",url=", tostring(url), ",cookie=", tostring(cookie_value), ")=", 
 		ok, ",", tostring(status), ", res.body:", tostring(userinfo))
@@ -100,6 +100,11 @@ local function check_right()
 		--ngx.log(ngx.INFO, "-------------------------:", json.dumps(userinfo))
 		ngx.ctx.userinfo = userinfo
 		username = userinfo.username
+	end
+	if headers and headers["Set-Cookie"] then
+		local cookie_value = headers["Set-Cookie"]
+		ngx.header['Set-Cookie'] = cookie_value
+		ngx.log(ngx.INFO, "******* Re Set-Cookie:", cookie_value, " *******")
 	end
 	if ok then
 		---

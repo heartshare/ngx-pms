@@ -7,14 +7,12 @@ local _M = {}
 	equals={"/test", "/login"},
 	suffix={".doc", ".jpg"},
 	prefix={"/demo", "/error"},
-	regex={""}
 	}
 ]]
 _M.ignore_list = {
-	equals={"/test", "/login", "/favicon.ico"},
-	suffix={".doc", ".jpg"},
-	prefix={"/error"},
-	regex={}
+	equals={"/favicon.ico"},
+	suffix={},
+	prefix={}
 }
 
 --[[
@@ -29,7 +27,7 @@ _M.infobar_page = "/nright/infobar"
 
 ]]
 -- Cookie 设置相关参数。
-_M.cookie_config = {key="nright", path="/", expires=3600*24*10}
+_M.cookie_config = {key="nright", path="/", expires=3600}
 
 -- 数据库配置。
 _M.db = {host="192.168.1.111", port=3306,user="root", password="123456",

@@ -17,7 +17,6 @@ end
 
 local function get_user_by_cookie(cookie_value)
 	local cookie = ck.parse_cookie(cookie_value)
-
 	local ok, userinfo = cookiedao.cookie_get(cookie)
 	if ok then
 		ngx.ctx.userinfo = userinfo
@@ -183,6 +182,15 @@ local function get_url_permission(app, url)
 	return ok, url_perm.permission 
 end
 
+local function http_resp(status, body, cookie)
+	ngx.status = status
+	ck.set_cookie(cookie)
+	if body then
+		ngx.say(body)
+	end
+	ngx.exit(0)
+end
+
 local function right_check()
 	local args = ngx.req.get_uri_args()
 	local app = args.app
@@ -206,57 +214,42 @@ local function right_check()
 	if not ok then
 		if userinfo == error.err_data_not_exist then
 			ngx.log(ngx.ERR, "cookie [", cookie, "] not exist in database!")
-			ngx.status = ngx.HTTP_UNAUTHORIZED
-			ngx.say("session-timeout")
-			ngx.exit(0)
+			http_resp(ngx.HTTP_UNAUTHORIZED, "session-timeout", cookie)
 		else
 			ngx.exit(ngx.HTTP_INTERNAL_SERVER_ERROR)
 		end
 	end
 	local username = userinfo.username
-
+	local userinfo_json = json.dumps(userinfo)
 	local ok, url_permission = get_url_permission(app, uri)
 	ngx.log(ngx.INFO, "app [",tostring(app),"] url [", tostring(uri), "] permission: ", tostring(url_permission))
 	if ok then
 		if url_permission == "ALLOW_ALL" then -- 所有人可访问
 			ngx.log(ngx.INFO, "url [", app, ".", uri, "] permission is [", 
 					url_permission, '], allow all user to access!')
-			ngx.status = ngx.HTTP_OK
-			ngx.say(json.dumps(userinfo))
-			ngx.exit(0)
+			http_resp(ngx.HTTP_OK, userinfo_json, cookie)
 		elseif url_permission == "DENY_ALL" then --所有人不可访问
 			ngx.log(ngx.INFO, "url [", app, ".", uri, "] permission is [", 
 					url_permission, '], not allow any user to access!')
-			ngx.status = ngx.HTTP_UNAUTHORIZED
-			ngx.say(json.dumps(userinfo))
-			ngx.exit(0)
+			http_resp(ngx.HTTP_UNAUTHORIZED, userinfo_json, cookie)
 		elseif userinfo.permissions[url_permission] then -- 有权限。
 			ngx.log(ngx.INFO, "user [", username, "] have [", url_permission, '] permission to access: ', uri)
-			ngx.status = ngx.HTTP_OK
-			ngx.say(json.dumps(userinfo))
-			ngx.exit(0)
+			http_resp(ngx.HTTP_OK, userinfo_json, cookie)
 		else --没有权限 
 			ngx.log(ngx.ERR, "user [", username, "] have no [", url_permission, '] permission to access: ', uri)
-			ngx.status = ngx.HTTP_UNAUTHORIZED
-			ngx.say(json.dumps(userinfo))
-			ngx.exit(0)
+			http_resp(ngx.HTTP_UNAUTHORIZED, userinfo_json, cookie)
 		end
 	else 
 		if url_permission == error.err_data_not_exist then
 			ngx.log(ngx.INFO, "user [", username, "] check right for uri [", uri, "] ok, uri not exist!")
-			ngx.status = ngx.HTTP_OK
-			ngx.say(json.dumps(userinfo))
-			ngx.exit(0)
+			http_resp(ngx.HTTP_OK, userinfo_json, cookie)
 		else
 			ngx.log(ngx.ERR, "user [", username, "] check right for uri [", uri, "] failed, err:", tostring(url_permission))
-			ngx.status = ngx.HTTP_INTERNAL_SERVER_ERROR
-			ngx.say(json.dumps(userinfo))
-			ngx.exit(0)
+			http_resp(ngx.HTTP_INTERNAL_SERVER_ERROR, userinfo_json, cookie)
 		end
 	end
-	ngx.status = ngx.HTTP_UNAUTHORIZED
-	ngx.say(json.dumps(userinfo))
-	ngx.exit(0)
+
+	http_resp(ngx.HTTP_UNAUTHORIZED, userinfo_json, cookie)
 end
 
 local function no_access_page()
