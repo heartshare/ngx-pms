@@ -36,5 +36,7 @@ _M.db = {host="192.168.1.111", port=3306,user="root", password="123456",
 -- 列表显示时，默认分页大小
 _M.defNumPerPage = 15
 
+-- Password加密使用的盐，在系统使用之前修改，系统开始使用后，请不要修改。
+_M.password_magic = '#*nright@0Ol1llOO'
 
 return _M
