@@ -101,8 +101,28 @@ end
 
 local function change_pwd_page()
 	-- set $template_root /path/to/templates;
-	ngx.header['Content-Type'] = "text/html"
+	ngx.header['Content-Type'] = "text/html"	
 	local args = ngx.req.get_uri_args()
+
+	local cookie = ck.get_cookie()
+	if not cookie then -- 没有登录，不能修改密码
+		ngx.log(ngx.ERR, "change password failed！cookie not found!")
+		util.redirect("/nright/login")
+	end
+	local ok, userinfo = get_user_by_cookie(cookie)
+	if not ok then
+		if userinfo == error.err_data_not_exist then
+			ngx.log(ngx.ERR, "cookie [", cookie, "] not exist in database!")
+			util.redirect("/nright/login")
+		else
+			ngx.exit(ngx.HTTP_INTERNAL_SERVER_ERROR)
+		end
+	end
+	args["username"] = userinfo.username
+
+	if config.not_allow_change_pwd then
+		args["error_info"] = r.ERR_NO_PERMISSION
+	end
 	change_pwd_render(args)
 end
 
@@ -116,7 +136,6 @@ local function change_pwd_post()
 		ngx.log(ngx.ERR, "change password failed！cookie not found!")
 		util.redirect("/nright/login")
 	end
-
 	local ok, userinfo = get_user_by_cookie(cookie)
 	if not ok then
 		if userinfo == error.err_data_not_exist then
@@ -126,6 +145,13 @@ local function change_pwd_post()
 			ngx.exit(ngx.HTTP_INTERNAL_SERVER_ERROR)
 		end
 	end
+	args["username"] = userinfo.username
+
+	if config.not_allow_change_pwd then
+		args["error_info"] = r.ERR_NO_PERMISSION
+		change_pwd_render(args)
+	end
+
 	local old_password = args.old_password
 	local new_password = args.new_password
 	local re_new_password = args.re_new_password
