@@ -23,3 +23,4 @@
 ![对象关系](docs/ngx-pms.jpeg)
 
 # 部署
+* 部署请参见[部署文档](docs/deploy.md)

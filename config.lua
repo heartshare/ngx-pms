@@ -30,8 +30,8 @@ _M.infobar_page = "/nright/infobar"
 _M.cookie_config = {key="nright", path="/", expires=3600}
 
 -- 数据库配置。
-_M.db = {host="192.168.1.111", port=3306,user="root", password="123456",
-		database="nright",DEFAULT_CHARSET="utf8"}
+_M.db = {host="127.0.0.1", port=3306,user="root", password="123456",
+		database="pms",DEFAULT_CHARSET="utf8"}
 
 -- 列表显示时，默认分页大小
 _M.defNumPerPage = 15
