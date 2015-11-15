@@ -16,7 +16,22 @@ use pms;
 * Ö´ĞĞ½Å±¾´´½¨±í½á¹¹£º
 
 ```shell
-source path/to/ngx-pms/docs/scripts/db.sql
+source /path/to/ngx-pms/docs/scripts/db.sql
+```
+Èç¹ûÖ´ĞĞ³É¹¦£¬Ó¦¸Ã´´½¨ÁËÈçÏÂ¼¸ÕÅ±í£º
+```mysql
+mysql> show tables;
++-----------------+
+| Tables_in_pms   |
++-----------------+
+| application     |
+| permission      |
+| role            |
+| url_perm        |
+| user            |
+| user_permission |
++-----------------+
+6 rows in set (0.00 sec)
 ```
 
 #### ngx-pms·şÎñ²¿Êğ
@@ -80,7 +95,7 @@ _M.password_magic = '#*nright@0Ol1llOO'
 Ö÷ÒªĞèÒªĞŞ¸Ä_M.dbÖĞµÄÊı¾İ¿â²¿·Ö¡£
 ÏµÍ³³õÊ¼»¯Ê±£¬ĞèÒªĞŞ¸Ä_M.password_magic²¿·Ö¡£
 
-* Æô¶¯nginx
+* Æô¶¯nginx<br/>
 nginxÆô¶¯ºó£¬¾Í¿ÉÒÔ·ÃÎÊ¹ÜÀíºóÌ¨À´¶ÔÏµÍ³½øĞĞ¹ÜÀíÁË£¬µ«ÓÉÓÚ»¹Ã»ÓĞÕÊºÅ£¬ÎŞ·¨µÇÂ¼£¬Çë°´ÕÕÏÂÃæµÄ²½ÖèÉú³ÉÃÜÂë£¬²¢Ìí¼ÓrootÕÊºÅ£º
 
 #### Ìí¼ÓrootÕÊºÅ
@@ -93,7 +108,7 @@ nginxÆô¶¯ºó£¬¾Í¿ÉÒÔ·ÃÎÊ¹ÜÀíºóÌ¨À´¶ÔÏµÍ³½øĞĞ¹ÜÀíÁË£¬µ«ÓÉÓÚ»¹Ã»ÓĞÕÊºÅ£¬ÎŞ·¨µÇÂ¼£¬Ç
 
 ```sql
 insert into user(username,email,tel,password,app,manager, role_id,create_time, update_time)
-values('root', 'root@163.com', '13380333333', '${password}',
+values('root', 'jie123108@163.com', '13380333333', '${password}',
 'all', 'super', '',unix_timestamp(), unix_timestamp());
 ```
 
@@ -101,7 +116,7 @@ values('root', 'root@163.com', '13380333333', '${password}',
 
 ```sql
 insert into user(username,email,tel,password,app,manager, role_id,create_time, update_time)
-values('root', 'root@163.com', '13380333333', '4b3fc94423693eab92d632688037f9d2',
+values('root', 'jie123108@163.com', '13380333333', '4b3fc94423693eab92d632688037f9d2',
 'all', 'super', '',unix_timestamp(), unix_timestamp());
 ```
 
@@ -177,3 +192,8 @@ server {
         proxy_pass    http://xx.xx.xx.xx:80;
     }
  }
+```
+
+# ·ÃÎÊÓ¦ÓÃ²¢µÇÂ¼
+------
+·ÃÎÊÓ¦ÓÃºó£¬»áÌáÊ¾µÇÂ¼£¬ÄãÊ¹ÓÃÔÚ¹ÜÀíºóÌ¨ÖĞÌí¼ÓµÄÓÃ»§ÕÊºÅµÇÂ¼£¬¾Í¿ÉÒÔ·ÃÎÊÏàÓ¦¾ßÓĞÈ¨ÏŞµÄÒ³ÃæÁË¡£

@@ -79,7 +79,7 @@ function _M.add_post()
 
     local userinfo = {username=username, email=email, tel=tel,
                         password=util.make_pwd(password),
-    					app=app,manager=manager,role_id="",permission="",
+    					app=app,manager=manager,role_id="",
     					create_time=create_time,update_time=update_time}
 
     -- 检查应用是否存在。
