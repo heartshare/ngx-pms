@@ -201,7 +201,7 @@ function _M.add_post()
         local dao = userpermdao:new(connection)
         if permission == nil or permission == "" then
             local ok, err = dao:delete(id, permissioin_app)
-            if not ok then
+            if not ok and err ~= error.err_data_not_exist then
                 if tx_ok then 
                     tx_ok, tx_err = mysql.tx_rollback(connection)
                 end
