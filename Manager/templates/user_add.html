@@ -46,7 +46,7 @@
 			{%	if cur_manager == "admin" then %}
 			<p class="row_add">
 				<label class="row_add">角色:</label>
-				<select class="combox" name="role_id" disabled="disabled" style="width: 200px;">
+				<select class="combox" name="role_id" style="width: 200px;">
 					{% for i, roleinfo in ipairs(roles) do %}
 			      		<option value="{{roleinfo.id}}"
 			      		{% if userinfo and userinfo.role_id == roleinfo.id then %} selected="selected" {% end %}>{{roleinfo.name}}</option>
