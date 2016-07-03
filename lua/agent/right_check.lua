@@ -114,7 +114,7 @@ local function check_right()
 			if userinfo == "session-timeout" then
 				util.redirect(login_url, uri_args_as_args())
 			else 
-				util.redirect(no_access_page, uri_args_as_args({username=username}))
+				util.redirect(no_access_page, uri_args_as_args({username=username, app=app}))
 			end
 		else
 			ngx.status = status
