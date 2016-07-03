@@ -14,10 +14,10 @@ unique key(appname)
 create table `user` (
 id integer primary key auto_increment,
 username varchar(64) not null comment '用户名',
-email varchar(128) not null comment '用户的email地址',
+email varchar(128) null comment '用户的email地址',
 tel varchar(16) null comment '用户的手机号',
-password varchar(64) not null comment '密码的md5值',
-app varchar(64) not null comment '应用标识',
+password varchar(64) null comment '密码的md5值',
+app varchar(1024) null comment '应用标识列表，多个app时，以|分割',
 manager varchar(32) null comment '管理权限: super,超级管理员;admin,管理员',
 role_id varchar(32) null comment '角色ID，只能有一个角色',
 create_time integer unsigned comment '创建时间',
@@ -28,7 +28,7 @@ key(tel)
 ) engine=innodb comment='用户表';
 
 create table `permission` (
-id varchar(32) comment '权限ID,使用字母,下划线',
+id varchar(64) comment '权限ID,使用字母,下划线',
 name varchar(64) not null comment '权限名称',
 remark varchar(128) null comment '备注说明',
 app varchar(64) not null comment '应用标识',
@@ -53,7 +53,7 @@ type varchar(16) not null comment 'url匹配类型包含以下几种：
 url varchar(256) not null comment 'URL',
 url_len smallint default 0 comment 'url长度, 用作优先级，匹配时，
 使用最大匹配原则，所以长度越大，优先级越高',
-permission varchar(32) null comment '访问需要的权限，NULL表示任何人可访问',
+permission varchar(64) null comment '访问需要的权限，NULL表示任何人可访问',
 create_time integer unsigned comment '创建时间',
 update_time integer unsigned comment '修改时间',
 primary key(id),
@@ -61,7 +61,7 @@ unique key(app,type,url(200))
 ) engine=innodb comment='URL权限表';
 
 create table `role` (
-id varchar(32) primary key comment '字符串类型的角色ID',
+id varchar(64) primary key comment '字符串类型的角色ID',
 name varchar(64) not null comment '权限名称',
 remark varchar(128) null comment '备注说明',
 app varchar(64) not null comment '应用标识',

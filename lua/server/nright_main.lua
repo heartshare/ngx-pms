@@ -21,12 +21,11 @@ local function get_user_by_cookie(cookie_value)
 	if ok then
 		ngx.ctx.userinfo = userinfo
 	else 
-		userinfo = error.err_data_not_exist
+		userinfo = nil
 	end
 
 	return ok, userinfo
 end
-
 
 local function login_render(args)
 	ngx.header['Content-Type'] = "text/html"
@@ -66,8 +65,8 @@ local function login_post()
 	end
 	local dao = userdao:new()
 	local ok, userinfo = dao:get_by_name(username)
-	if not ok then
-		if userinfo == error.err_data_not_exist then
+	if not ok or userinfo == nil then
+		if userinfo == nil then
 			args["error_info"] = r.ERR_USER_NOT_EXIST
 			login_render(args)
 		else 
@@ -110,8 +109,8 @@ local function change_pwd_page()
 		util.redirect("/nright/login")
 	end
 	local ok, userinfo = get_user_by_cookie(cookie)
-	if not ok then
-		if userinfo == error.err_data_not_exist then
+	if not ok or userinfo == nil then
+		if userinfo == nil then
 			ngx.log(ngx.ERR, "cookie [", cookie, "] not exist in database!")
 			util.redirect("/nright/login")
 		else
@@ -137,8 +136,8 @@ local function change_pwd_post()
 		util.redirect("/nright/login")
 	end
 	local ok, userinfo = get_user_by_cookie(cookie)
-	if not ok then
-		if userinfo == error.err_data_not_exist then
+	if not ok or userinfo == nil then
+		if userinfo == nil then
 			ngx.log(ngx.ERR, "cookie [", cookie, "] not exist in database!")
 			util.redirect("/nright/login")
 		else
@@ -202,7 +201,7 @@ end
 local function get_url_permission(app, url)
 	local dao = urldao:new()
 	local ok, url_perm = dao:url_perm_get(app, url)
-	if not ok then
+	if not ok or url_perm == nil then
 		return ok, url_perm 
 	end
 	return ok, url_perm.permission 
@@ -237,8 +236,8 @@ local function right_check()
 	end
 
 	local ok, userinfo = get_user_by_cookie(cookie)
-	if not ok then
-		if userinfo == error.err_data_not_exist then
+	if not ok or userinfo == nil then
+		if userinfo == nil then
 			ngx.log(ngx.ERR, "cookie [", cookie, "] not exist in database!")
 			http_resp(ngx.HTTP_UNAUTHORIZED, "session-timeout", cookie)
 		else
@@ -249,7 +248,7 @@ local function right_check()
 	local userinfo_json = json.dumps(userinfo)
 	local ok, url_permission = get_url_permission(app, uri)
 	ngx.log(ngx.INFO, "app [",tostring(app),"] url [", tostring(uri), "] permission: ", tostring(url_permission))
-	if ok then
+	if ok and url_permission then
 		if url_permission == "ALLOW_ALL" then -- 所有人可访问
 			ngx.log(ngx.INFO, "url [", app, ".", uri, "] permission is [", 
 					url_permission, '], allow all user to access!')
@@ -266,7 +265,7 @@ local function right_check()
 			http_resp(ngx.HTTP_UNAUTHORIZED, userinfo_json, cookie)
 		end
 	else 
-		if url_permission == error.err_data_not_exist then
+		if url_permission == nil then
 			ngx.log(ngx.INFO, "user [", username, "] check right for uri [", uri, "] ok, uri not exist!")
 			http_resp(ngx.HTTP_OK, userinfo_json, cookie)
 		else

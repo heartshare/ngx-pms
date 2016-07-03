@@ -5,12 +5,12 @@ date: 20151014
 local template = require "resty.template"
 local config = require("config")
 local urldao = require("dao.url_dao")
-local mysql = require("dao.mysql_util")
 local viewpub = require("Manager.lua.viewpub")
 local json = require("util.json")
 local dwz = require("Manager.lua.dwzutil")
 local util = require("util.util")
 local error = require('dao.error')
+local apputil = require("Manager.lua.apputil")
 local tmpl_caching = config.tmpl_caching
 if tmpl_caching == nil then
 	tmpl_caching = false
@@ -29,19 +29,15 @@ function _M.list_render()
     local cur_userinfo = ngx.ctx.userinfo
     local app = nil
     if cur_userinfo.manager ~= "super" then
-        app = cur_userinfo.app
+        app = apputil.sel_app_get(ngx.ctx.userinfo.id)
     end
 
     local totals = 0
     local dao = urldao:new()
     local ok, urls = dao:list(app, pageNum, numPerPage)
-    if not ok then
-        if urls == error.err_data_not_exist then
-
-        else
-            errmsg = urls
-            ngx.log(ngx.ERR, "urldao:list(", tostring(app), ") failed! err:", tostring(urls))
-        end
+    if not ok then        
+        errmsg = urls
+        ngx.log(ngx.ERR, "urldao:list(", tostring(app), ") failed! err:", tostring(urls))        
         urls = {}
     else
         ok, totals = dao:count(app)
@@ -53,8 +49,12 @@ function _M.list_render()
     if ngx.ctx.userinfo then
         cur_manager = ngx.ctx.userinfo.manager
     end
+    local permissions_all = viewpub.get_permissions()
+    local perm_map = viewpub.perm_map(permissions_all)
+
 	template.caching(tmpl_caching)
-	template.render("url_list.html", {errmsg=errmsg, urls=urls, type_maps=type_maps,cur_manager=cur_manager,
+	template.render("url_list.html", {errmsg=errmsg, urls=urls, type_maps=type_maps,
+                    cur_manager=cur_manager,perm_map=perm_map,
                     pageNum=pageNum, numPerPage=numPerPage, totals=totals})
 	ngx.exit(0)
 end
@@ -66,7 +66,10 @@ function _M.add_render()
     if id then
         local dao = urldao:new()
         ok, urlinfo = dao:get_by_id(id)
-        if not ok then
+        if not ok or urlinfo == nil then
+            if urlinfo == nil then 
+                urlinfo = "URL不存在"
+            end
             ngx.log(ngx.ERR, "urldao:get_by_id(", id, ") failed! err:", tostring(urlinfo))
             ngx.say(dwz.cons_resp(300, "修改URL信息时出错：" .. tostring(urlinfo)))
             ngx.exit(0)
@@ -163,9 +166,9 @@ function _M.del_post()
     -- 检查用户是否存在
     local dao = urldao:new()
     local ok, urlinfo = dao:get_by_id(id)
-    if not ok then
-        if urlinfo == error.err_data_not_exist then
-            urlinfo = 'URLID不存在'
+    if not ok or urlinfo == nil then
+        if urlinfo == nil then
+            urlinfo = 'URL不存在'
         end
         ngx.say(dwz.cons_resp(300, "删除URL信息时出错了，错误：" .. tostring(urlinfo)))
         ngx.exit(0)

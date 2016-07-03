@@ -9,7 +9,7 @@ local userdao = require('dao.user_dao')
 local viewpub = require("Manager.lua.viewpub")
 local roledao = require("dao.role_dao")
 local userpermdao = require("dao.user_perm_dao")
-local mysql = require("dao.mysql_util")
+local mysql = require("dao.mysql_util").get_mysql_mgr()
 local json = require("util.json")
 local dwz = require("Manager.lua.dwzutil")
 local util = require("util.util")
@@ -36,13 +36,6 @@ function _M.list_render()
         args.tel = nil
     end
     local cur_userinfo = ngx.ctx.userinfo
-    local app = nil
-    if cur_userinfo.manager ~= "super" then
-        app = cur_userinfo.app
-        ngx.log(ngx.INFO, "----------------: cur_userinfo.app: ", app)
-    end
-    args['app'] = app
-    args['with_public'] = true
     ngx.log(ngx.INFO, "--------------:", cur_userinfo.manager)
 
 	local dao = userdao:new()
@@ -50,13 +43,8 @@ function _M.list_render()
 	local numPerPage = tonumber(args.numPerPage) or config.defNumPerPage
 	local ok, users = dao:list(args, pageNum, numPerPage)
 	if not ok then
-		if users == error.err_data_not_exist then
-			totals = 0
-			users = {}
-		else
-			errmsg = users
-			users = nil
-		end
+		errmsg = users
+		users = nil
 	else 
 		ok, totals = dao:count(args)
 		if not ok then
@@ -71,6 +59,93 @@ function _M.list_render()
 	ngx.exit(0)
 end
 
+function _M.app_change_render()
+    local args = ngx.req.get_uri_args()
+    local id = tonumber(args.id)
+    
+    local cur_userinfo = ngx.ctx.userinfo
+
+    local ok, userinfo = nil
+    if id then
+        local dao = userdao:new()
+        --dao:set_app(cur_userinfo.app)
+        ok, userinfo = dao:get_by_id(id)
+        if not ok or userinfo == nil then
+            if userinfo == nil then 
+                userinfo = "用户不存在"
+            end
+            ngx.log(ngx.ERR, "userdao:get_by_id(", id, ") failed! err:", tostring(userinfo))
+            ngx.say(dwz.cons_resp(300, "修改用户应用时出错：" .. tostring(userinfo)))
+            ngx.exit(0)
+        end
+    end
+    
+    local app, apps = viewpub.get_app_and_apps(true)
+    
+    local app_map = viewpub.app_map(apps)
+
+    if userinfo then
+        apps = viewpub.app_sub(apps, userinfo.apps)
+    end
+
+    local cur_manager = nil
+    if ngx.ctx.userinfo then
+        cur_manager = ngx.ctx.userinfo.manager
+    end
+
+    template.caching(tmpl_caching)
+    template.render("user_app_chg.html", {
+            app_map=app_map, app_others=app_others,
+            app_others=apps, userinfo=userinfo,cur_manager=cur_manager})
+    ngx.exit(0)
+end
+
+function _M.app_change_post()
+    ngx.req.read_body()
+    local args, err = ngx.req.get_post_args()
+    local id = tonumber(args.id)
+    local username = args.username
+   
+    local app = args.app
+    local manager = args.manager    
+    local create_time = ngx.time()
+    local update_time = ngx.time()
+
+    local cur_userinfo = ngx.ctx.userinfo
+    
+    if type(app) == 'table' then
+        app = table.concat(app, "|")
+    end
+    if manager ~= "super" then 
+        if app == nil or app == "" then 
+            manager = ""
+        else 
+            manager = "admin"
+        end
+    end
+    local userinfo = {app=app,manager=manager,role_id=role_id,
+                      update_time=update_time}
+    
+    -- 检查用户是否存在
+    local dao = userdao:new()
+    
+    userinfo["create_time"] = nil
+
+    local dao = userdao:new()
+    local ok, err = dao:update(userinfo, {id=id})
+    if not ok then  
+        ngx.log(ngx.ERR, "userdao:update(", json.dumps(userinfo),",", json.dumps({id=id}), ") failed! err:", tostring(err))
+        if err == error.err_data_exist then
+            ngx.say(dwz.cons_resp(300, "修改用户应用信息时出错了: 数据重复"))
+        else
+            ngx.say(dwz.cons_resp(300, "修改用户应用信息时出错了:" .. tostring(err)))
+        end     
+        ngx.exit(0)
+    end
+
+    ngx.say(dwz.cons_resp(200, "用户【" .. username .. "】应用信息修改成功", {navTabId="user_list", callbackType="closeCurrent"}))
+end
+
 function _M.add_render()
 	local args = ngx.req.get_uri_args()
     local id = tonumber(args.id)
@@ -82,44 +157,48 @@ function _M.add_render()
         local dao = userdao:new()
         dao:set_app(cur_userinfo.app)
         ok, userinfo = dao:get_by_id(id)
-        if not ok then
+        if not ok or userinfo == nil then
+            if userinfo == nil then 
+                userinfo = "用户不存在"
+            end
             ngx.log(ngx.ERR, "userdao:get_by_id(", id, ") failed! err:", tostring(userinfo))
             ngx.say(dwz.cons_resp(300, "修改用户信息时出错：" .. tostring(userinfo)))
             ngx.exit(0)
         end
     end
     
-    local app, apps = viewpub.get_app_and_apps(true, true)
+    local app, apps = viewpub.get_app_and_apps(true)
 	local permissions = viewpub.get_permissions(app)
     -- 权限ID->权限名称的映射表，用于WEB页面展示使用。
     local permissions_all = viewpub.get_permissions()
     local perm_map = viewpub.perm_map(permissions_all)
+    local app_map = viewpub.app_map(apps)
 
     local dao = roledao:new()
     local role_ok, roles = dao:list(app, 1, 1024)
     if not role_ok then
-        if roles == error.err_data_not_exist then
-
-        else
-            ngx.log(ngx.ERR, "roledao:list(", tostring(roles), ") failed! err:", tostring(roles))
-        end
+        ngx.log(ngx.ERR, "roledao:list(", tostring(roles), ") failed! err:", tostring(roles))
         roles = {{id="", name="无", remark=""}}
     else
         table.insert(roles, 1, {id="", name="无", remark=""})
     end
 
-
+    local app_others = apps
     if userinfo then
         permissions = viewpub.perm_sub(permissions, userinfo.user_permissions)
+        app_others = viewpub.app_sub(apps, userinfo.apps)
     end
     local cur_manager = nil
     if ngx.ctx.userinfo then
         cur_manager = ngx.ctx.userinfo.manager
     end
+    local render_args = {permission_others=permissions, perm_map=perm_map, 
+            app_map=app_map, app_others=app_others, apps=apps,
+             roles=roles, userinfo=userinfo,cur_manager=cur_manager}
+    ngx.log(ngx.INFO, "render_args: ", json.dumps(render_args))
 
 	template.caching(tmpl_caching)
-	template.render("user_add.html", {permission_others=permissions, perm_map=perm_map, 
-            apps=apps, roles=roles, userinfo=userinfo,cur_manager=cur_manager})
+	template.render("user_add.html", render_args)
 	ngx.exit(0)
 end
 
@@ -138,7 +217,7 @@ function _M.add_post()
     local update_time = ngx.time()
 
     local cur_userinfo = ngx.ctx.userinfo
-    local permissioin_app = cur_userinfo.app
+    local permission_app = cur_userinfo.app
     if type(permission) == 'table' then
         permission = table.concat(permission, "|")
     end
@@ -154,12 +233,14 @@ function _M.add_post()
             ngx.say(dwz.cons_resp(300, "修改用户信息时出错了, 用户名[" .. username .. "]已经存在!"))
             ngx.exit(0)
         end
-        local ok, exist = dao:exist_exclude("email", email, id)
-        if ok and exist then
-            ngx.say(dwz.cons_resp(300, "修改用户信息时出错了, EMAIL[" .. email .. "]已经存在!"))
-            ngx.exit(0)
+        if email and #email > 0 then 
+            local ok, exist = dao:exist_exclude("email", email, id)
+            if ok and exist then
+                ngx.say(dwz.cons_resp(300, "修改用户信息时出错了, EMAIL[" .. email .. "]已经存在!"))
+                ngx.exit(0)
+            end
         end
-        if tel and string.len(tel) > 0 then
+        if tel and #tel > 0 then
             local ok, exist = dao:exist_exclude("tel", tel, id)
             if ok and exist then
                 ngx.say(dwz.cons_resp(300, "修改用户信息时出错了, TEL[" .. tel .. "]已经存在!"))
@@ -171,24 +252,24 @@ function _M.add_post()
         userinfo["create_time"] = nil
 
         -- 开启事务
-        local ok, connection = mysql.connection_get()
+        local ok, connection = mysql:connection_get()
         if not ok then
-            ngx.log(ngx.ERR, "mysql.connection_get failed! err:", tostring(connection))
+            ngx.log(ngx.ERR, "mysql:connection_get failed! err:", tostring(connection))
             ngx.say(dwz.cons_resp(300, "获取数据库链接出错了:" .. tostring(connection)))
             ngx.exit(0)
         end
-        local tx_ok, tx_err = mysql.tx_begin(connection)
+        local tx_ok, tx_err = mysql:tx_begin(connection)
         if not tx_ok then
-            ngx.log(ngx.ERR, "mysql.tx_begin failed! err:", tostring(tx_err))
+            ngx.log(ngx.ERR, "mysql:tx_begin failed! err:", tostring(tx_err))
         end
 
         local dao = userdao:new(connection)
         local ok, err = dao:update(userinfo, {id=id})
         if not ok then
             if tx_ok then 
-                tx_ok, tx_err = mysql.tx_rollback(connection)
+                tx_ok, tx_err = mysql:tx_rollback(connection)
             end
-            mysql.connection_put(connection)
+            mysql:connection_put(connection)
 
             ngx.log(ngx.ERR, "userdao:update(", json.dumps(userinfo),",", json.dumps({id=id}), ") failed! err:", tostring(err))
             if err == error.err_data_exist then
@@ -200,33 +281,33 @@ function _M.add_post()
         end
         local dao = userpermdao:new(connection)
         if permission == nil or permission == "" then
-            local ok, err = dao:delete(id, permissioin_app)
-            if not ok and err ~= error.err_data_not_exist then
+            local ok, err = dao:delete(id, permission_app)
+            if not ok then
                 if tx_ok then 
-                    tx_ok, tx_err = mysql.tx_rollback(connection)
+                    tx_ok, tx_err = mysql:tx_rollback(connection)
                 end
-                mysql.connection_put(connection)
-                ngx.log(ngx.ERR, "userpermdao:delete(", id,",", permissioin_app, ") failed! err:", tostring(err))
+                mysql:connection_put(connection)
+                ngx.log(ngx.ERR, "userpermdao:delete(", id,",", permission_app, ") failed! err:", tostring(err))
                 ngx.say(dwz.cons_resp(300, "修改用户权限时出错了:" .. tostring(err)))
                 ngx.exit(0)
             end
         else
-            local userperm_values = {userid=id, app=permissioin_app, permission=permission, 
+            local userperm_values = {userid=id, app=permission_app, permission=permission, 
                                      create_time=ngx.time(), update_time=ngx.time()}
             local ok, err = dao:saveOrUpdate(userperm_values)
             if not ok then
                 if tx_ok then 
-                    tx_ok, tx_err = mysql.tx_rollback(connection)
+                    tx_ok, tx_err = mysql:tx_rollback(connection)
                 end
-                mysql.connection_put(connection)
+                mysql:connection_put(connection)
                 ngx.log(ngx.ERR, "userpermdao:saveOrUpdate(", json.dumps(userperm_values), ") failed! err:", tostring(err))
                 ngx.say(dwz.cons_resp(300, "修改用户权限时出错了:" .. tostring(err)))
                 ngx.exit(0)
             end
         end
         -- 提交事物
-        tx_ok, tx_err = mysql.tx_commit(connection)
-        mysql.connection_put(connection)
+        tx_ok, tx_err = mysql:tx_commit(connection)
+        mysql:connection_put(connection)
 
         ngx.say(dwz.cons_resp(200, "用户【" .. username .. "】修改成功", {navTabId="user_list", callbackType="closeCurrent"}))
     else
@@ -235,12 +316,14 @@ function _M.add_post()
             ngx.say(dwz.cons_resp(300, "保存用户信息时出错了, 用户名[" .. username .. "]已经存在!"))
             ngx.exit(0)
         end
-        local ok, exist = dao:exist("email", email)
-        if ok and exist then
-            ngx.say(dwz.cons_resp(300, "保存用户信息时出错了, EMAIL[" .. email .. "]已经存在!"))
-            ngx.exit(0)
+        if email and #email > 0 then 
+            local ok, exist = dao:exist("email", email)
+            if ok and exist then
+                ngx.say(dwz.cons_resp(300, "保存用户信息时出错了, EMAIL[" .. email .. "]已经存在!"))
+                ngx.exit(0)
+            end
         end
-        if tel and string.len(tel) > 0 then
+        if tel and #tel > 0 then
             local ok, exist = dao:exist("tel", tel)
             if ok and exist then
                 ngx.say(dwz.cons_resp(300, "保存用户信息时出错了, TEL[" .. tel .. "]已经存在!"))
@@ -253,15 +336,15 @@ function _M.add_post()
         userinfo["password"] = util.make_pwd(password)
 
         -- 开启事务
-        local ok, connection = mysql.connection_get()
+        local ok, connection = mysql:connection_get()
         if not ok then
-            ngx.log(ngx.ERR, "mysql.connection_get failed! err:", tostring(connection))
+            ngx.log(ngx.ERR, "mysql:connection_get failed! err:", tostring(connection))
             ngx.say(dwz.cons_resp(300, "获取数据库链接出错了:" .. tostring(connection)))
             ngx.exit(0)
         end
-        local tx_ok, tx_err = mysql.tx_begin(connection)
+        local tx_ok, tx_err = mysql:tx_begin(connection)
         if not tx_ok then
-            ngx.log(ngx.ERR, "mysql.tx_begin failed! err:", tostring(tx_err))
+            ngx.log(ngx.ERR, "mysql:tx_begin failed! err:", tostring(tx_err))
         end
 
         local dao = userdao:new(connection)        
@@ -269,9 +352,9 @@ function _M.add_post()
         if not ok then
             local err = id
             if tx_ok then 
-                tx_ok, tx_err = mysql.tx_rollback(connection)
+                tx_ok, tx_err = mysql:tx_rollback(connection)
             end
-            mysql.connection_put(connection)
+            mysql:connection_put(connection)
             ngx.log(ngx.ERR, "userdao:save(", json.dumps(userinfo), ") failed! err:", tostring(err))
             if err == error.err_data_exist then
                 ngx.say(dwz.cons_resp(300, "保存用户信息时出错了: 数据重复"))
@@ -283,14 +366,14 @@ function _M.add_post()
 
         if permission ~= nil and permission ~= "" then   
             local dao = userpermdao:new(connection)         
-            local userperm_values = {userid=id, app=permissioin_app, permission=permission, 
+            local userperm_values = {userid=id, app=permission_app, permission=permission, 
                                      create_time=ngx.time(), update_time=ngx.time()}
             local ok, err = dao:saveOrUpdate(userperm_values)
             if not ok then
                 if tx_ok then 
-                    tx_ok, tx_err = mysql.tx_rollback(connection)
+                    tx_ok, tx_err = mysql:tx_rollback(connection)
                 end
-                mysql.connection_put(connection)
+                mysql:connection_put(connection)
                 ngx.log(ngx.ERR, "userpermdao:saveOrUpdate(", json.dumps(userperm_values), ") failed! err:", tostring(err))
                 ngx.say(dwz.cons_resp(300, "保存用户权限时出错了:" .. tostring(err)))
                 ngx.exit(0)
@@ -298,8 +381,8 @@ function _M.add_post()
         end
 
         -- 提交事物
-        tx_ok, tx_err = mysql.tx_commit(connection)
-        mysql.connection_put(connection)
+        tx_ok, tx_err = mysql:tx_commit(connection)
+        mysql:connection_put(connection)
 
          --TODO: 密码提示框会小时问题修改。
         ngx.say(dwz.cons_resp(200, string.format([[用户【%s】添加成功: <br/>
@@ -318,7 +401,10 @@ function _M.del_post()
     -- 检查用户是否存在
     local dao = userdao:new()
     local ok, userinfo = dao:get_by_id(id)
-    if not ok then
+    if not ok or userinfo == nil then
+        if userinfo == nil then 
+            userinfo = "用户不存在"
+        end
         ngx.say(dwz.cons_resp(300, "删除用户信息时出错了，错误：" .. tostring(userinfo)))
         ngx.exit(0)
     end 
@@ -330,11 +416,6 @@ function _M.del_post()
         ngx.exit(0)
     end
     local cur_userinfo = ngx.ctx.userinfo
-    -- 普通管理员不能删除public的用户。
-    if cur_userinfo.manager == "admin" and userinfo.app == "public" then
-        ngx.say(dwz.cons_resp(300, "普通管理员不能删除公共帐号！"))
-        ngx.exit(0)
-    end
 
     local ok, err = dao:delete_by_id(id)
     if not ok then
@@ -376,7 +457,7 @@ function _M.detail_render()
     local dao = userdao:new()
     local ok, userinfo = dao:get_by_id(id)    
 
-    if ok then
+    if ok and userinfo then
         --ngx.log(ngx.INFO, "---[", json.dumps(userinfo), "]---")
         template.caching(tmpl_caching)
         template.render("user_detail.html", {userinfo=userinfo, perm_map=perm_map})

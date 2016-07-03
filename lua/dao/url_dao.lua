@@ -105,9 +105,9 @@ function _M:url_perm_get(app, url)
     for i, where in ipairs(wheres) do
         where_ = where
         ok, obj = self.dao:get_by(where)
-        if ok then
+        if ok and obj then
             return ok, obj
-        elseif obj ~= error.err_data_not_exist then --出错
+        elseif not ok then --出错
             ngx.log(ngx.ERR, "url_dao.get_by(" .. tostring(where) .. ") failed! err:", tostring(obj))
             return ok, obj
         end

@@ -17,7 +17,8 @@ function _M.cons_resp(status, msg, args)
       navTabId=navTabId,
       rel=rel,
       warn=warn,
-      forwardUrl=forwardUrl}
+      forwardUrl=forwardUrl,
+    }
     
     return json.dumps(rsp)
 end

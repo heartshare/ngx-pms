@@ -1,6 +1,7 @@
 local appdao = require("dao.app_dao")
 local permdao = require('dao.perm_dao')
 local error = require('dao.error')
+local apputil = require("Manager.lua.apputil")
 
 local _M = {}
 
@@ -8,14 +9,13 @@ local sys_permissions = {{id="ALLOW_ALL", name="所有人可访问"},
                          {id="DENY_ALL", name="所有人不可访问"},}
 -- 获取用于查询的app及用于前端显示的app列表。
 -- get_apps: 同时返回所有可用app
--- get_public: apps里面添加public
-function _M.get_app_and_apps(get_apps, get_public)
+function _M.get_app_and_apps(get_apps)
     local cur_userinfo = ngx.ctx.userinfo
     if get_apps == nil then
         get_apps = true
     end
     local app = nil
-    local app_ok, apps = nil
+    local app_ok, apps = false, {}
     if cur_userinfo.manager == "super" then
         --可选择多个应用。
         if get_apps then
@@ -27,8 +27,8 @@ function _M.get_app_and_apps(get_apps, get_public)
             end
         end
     else
-        app = cur_userinfo.app
-        if get_apps then
+        app = apputil.sel_app_get(ngx.ctx.userinfo.id)
+        if app and get_apps then
             local dao = appdao:new()
             local ok, appinfo = dao:get_by_app(app)
             if ok then
@@ -38,9 +38,7 @@ function _M.get_app_and_apps(get_apps, get_public)
             end
         end
     end
-    if apps and get_public then
-        table.insert(apps, 1, {app="public", appname="公共"})
-    end
+    
     return app, apps
 end
 
@@ -54,16 +52,12 @@ function _M.get_permissions(app, get_sys_perms)
     local dao = permdao:new()
     local perm_ok, permissions = dao:list(app, 1, 1024)
     if not perm_ok then
-        if permissions == error.err_data_not_exist then
-
-        else
-            ngx.log(ngx.ERR, "permdao:list(", tostring(app), ") failed! err:", tostring(permissions))
-        end
+        ngx.log(ngx.ERR, "permdao:list(", tostring(app), ") failed! err:", tostring(permissions))
         permissions = {}
     end
     if get_sys_perms then
-        for _, perm in ipairs(sys_permissions) do 
-            table.insert(permissions, perm)
+        for i, perm in ipairs(sys_permissions) do 
+            table.insert(permissions, i, perm)
         end
     end
     return permissions
@@ -124,6 +118,44 @@ function _M.perm_sub(all_permissions, sub_permissions)
         end
     end
     return tmp_values   
+end
+
+
+-- return all_apps - sub_apps
+function _M.app_sub(all_apps, sub_apps)
+    --print_tab(all_apps, 'all_apps')
+    --print_tab(sub_apps, 'sub_apps')
+
+    if not sub_apps then
+        return all_apps
+    end
+    if not all_apps then
+        return all_apps
+    end
+
+    local sub_apps_as_map = {}
+    for i, value in ipairs(sub_apps) do 
+        sub_apps_as_map[value] = 1
+    end
+
+    local tmp_values = {}
+    for i, app in ipairs(all_apps) do 
+        if not sub_apps_as_map[app.app] then
+            table.insert(tmp_values, app)
+        end
+    end
+    return tmp_values   
+end
+
+-- return {'app'='appname'}
+function _M.app_map(all_apps)
+    local map = {}
+    if all_apps then
+        for i, app in ipairs(all_apps) do
+            map[app.app] = app.appname
+        end
+    end
+    return map
 end
 
 return _M

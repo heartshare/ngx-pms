@@ -5,12 +5,13 @@ date: 20151014
 local template = require "resty.template"
 local config = require("config")
 local permdao = require("dao.perm_dao")
-local mysql = require("dao.mysql_util")
 local viewpub = require("Manager.lua.viewpub")
 local json = require("util.json")
 local dwz = require("Manager.lua.dwzutil")
 local util = require("util.util")
 local error = require('dao.error')
+local apputil = require("Manager.lua.apputil")
+
 local tmpl_caching = config.tmpl_caching
 if tmpl_caching == nil then
 	tmpl_caching = false
@@ -29,19 +30,15 @@ function _M.list_render()
     local cur_userinfo = ngx.ctx.userinfo
     local app = nil
     if cur_userinfo.manager ~= "super" then
-        app = cur_userinfo.app
+        app = apputil.sel_app_get(ngx.ctx.userinfo.id)
     end
 
     local totals = 0
     local dao = permdao:new()
     local ok, permissions = dao:list(app, pageNum, numPerPage)
     if not ok then
-        if permissions == error.err_data_not_exist then
-
-        else
-            errmsg = permissions
-            ngx.log(ngx.ERR, "permdao:list(", tostring(app), ") failed! err:", tostring(permissions))
-        end
+        errmsg = permissions
+        ngx.log(ngx.ERR, "permdao:list(", tostring(app), ") failed! err:", tostring(permissions))        
         permissions = {}
     else
         ok, totals = dao:count(app)
@@ -66,7 +63,10 @@ function _M.add_render()
     if id then
         local dao = permdao:new()
         ok, permission = dao:get_by_id(id)
-        if not ok then
+        if not ok or permission == nil then
+            if permission == nil then 
+                permission = '用户不存在！'
+            end
             ngx.log(ngx.ERR, "permdao:get_by_id(", id, ") failed! err:", tostring(permission))
             ngx.say(dwz.cons_resp(300, "修改权限信息时出错：" .. tostring(permission)))
             ngx.exit(0)
@@ -153,8 +153,8 @@ function _M.del_post()
     -- 检查用户是否存在
     local dao = permdao:new()
     local ok, perminfo = dao:get_by_id(id)
-    if not ok then
-        if perminfo == error.err_data_not_exist then
+    if not ok or perminfo == nil then
+        if perminfo == nil then
             perminfo = '权限ID不存在'
         end
         ngx.say(dwz.cons_resp(300, "删除权限信息时出错了，错误：" .. tostring(perminfo)))

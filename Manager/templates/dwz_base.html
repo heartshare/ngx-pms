@@ -69,6 +69,10 @@
 <script src="/static/js/nrights.js" type="text/javascript"></script>
 
 <script type="text/javascript">
+function sel_app_link_click(){
+	$("#sel_app_link").trigger("click");
+}
+
 $(function(){
 	DWZ.init("/static/dwz/dwz.frag.xml", {
 		loginUrl:"login_dialog.html", loginTitle:"登录",	// 弹出登录对话框
@@ -80,9 +84,24 @@ $(function(){
 			initEnv();
 			//$("#themeList").theme({themeBase:"/static/dwz/themes"}); // themeBase 相对于index页面的主题base路径
 		}
-	});
+	});	
+	//setTimeout("alert('对不起, 要你久候')", 3000 )
+	// 首次登录，有管理的app，但是没有选择app。
+	{% if sel_app==nil and ngx.ctx.userinfo and ngx.ctx.userinfo.apps and #ngx.ctx.userinfo.apps > 0 then %}	
+		setTimeout("sel_app_link_click()", 300);
+	{% end %}
 });
 
+//window
+$(window).load(function(){
+
+});
+
+function changepwd_click(){
+	//alert('请使用MCC后台修改密码！'); 
+	alertMsg.info('请使用MCC后台修改密码！');
+	return false;
+}
 </script>
 </head>
 
@@ -94,6 +113,13 @@ $(function(){
 				<ul class="nav">
 					{% if ngx.ctx.userinfo then %}
 					<li><a href="/user/detail?id={{ngx.ctx.userinfo.id}}" target="dialog" width="500" height="400">{{ngx.ctx.userinfo.username}}</a></li>
+					{% end %}
+					{% if ngx.ctx.userinfo and ngx.ctx.userinfo.apps then %}
+					<li>
+						<a id="sel_app_link" href="/app/change_current" target="dialog" width="450" height="150" title="选择管理的应用" >
+							{{sel_app or '#'}}
+						</a>
+					</li>
 					{% end %}
 					<li><a href="/passport/changepwd" target="dialog" width="450" height="200">修改密码</a></li>
 					<li><a href="/passport/logout">退出</a></li>

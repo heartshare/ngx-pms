@@ -6,12 +6,12 @@ local template = require "resty.template"
 local config = require("config")
 local permdao = require("dao.perm_dao")
 local roledao = require("dao.role_dao")
-local mysql = require("dao.mysql_util")
 local viewpub = require("Manager.lua.viewpub")
 local json = require("util.json")
 local dwz = require("Manager.lua.dwzutil")
 local util = require("util.util")
 local error = require('dao.error')
+local apputil = require("Manager.lua.apputil")
 local tmpl_caching = config.tmpl_caching
 if tmpl_caching == nil then
 	tmpl_caching = false
@@ -30,19 +30,15 @@ function _M.list_render()
     local cur_userinfo = ngx.ctx.userinfo
     local app = nil
     if cur_userinfo.manager ~= "super" then
-        app = cur_userinfo.app
+        app = apputil.sel_app_get(ngx.ctx.userinfo.id)
     end
 
     local totals = 0
     local dao = roledao:new()
     local ok, roles = dao:list(app, pageNum, numPerPage)
     if not ok then
-        if roles == error.err_data_not_exist then
-
-        else
-            errmsg = roles
-            ngx.log(ngx.ERR, "roledao:list(", tostring(app), ") failed! err:", tostring(roles))
-        end
+        errmsg = roles
+        ngx.log(ngx.ERR, "roledao:list(", tostring(app), ") failed! err:", tostring(roles))
         roles = {}
     else
         ok, totals = dao:count(app)
@@ -67,7 +63,10 @@ function _M.add_render()
     if id then
         local dao = roledao:new()
         ok, role = dao:get_by_id(id)
-        if not ok then
+        if not ok or role == nil then
+            if role == nil then 
+                role = '角色不存在！'
+            end
             ngx.log(ngx.ERR, "roledao:get_by_id(", id, ") failed! err:", tostring(role))
             ngx.say(dwz.cons_resp(300, "修改角色信息时出错：" .. tostring(role)))
             ngx.exit(0)
@@ -164,8 +163,8 @@ function _M.del_post()
     -- 检查用户是否存在
     local dao = roledao:new()
     local ok, roleinfo = dao:get_by_id(id)
-    if not ok then
-        if roleinfo == error.err_data_not_exist then
+    if not ok or roleinfo == nil then
+        if roleinfo == nil then
             roleinfo = '角色ID不存在'
         end
         ngx.say(dwz.cons_resp(300, "删除角色信息时出错了，错误：" .. tostring(roleinfo)))

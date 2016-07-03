@@ -62,12 +62,14 @@ local topbar_tpl = [[
 }
 -->
 </style>
-<table width="100%%" border="0" cellspacing="1" cellpadding="0" class="topbar">
+<div class="topbar">
+<table width="100%%" border="0" cellspacing="1" cellpadding="0">
   <tr>
   	<td align="left">&nbsp;&nbsp;Nginx Permission System</td>
     <td align="right">&nbsp;&nbsp;USER: %s| <a %s>Change Password</a> | <a href="%s" target="_self">Logout</a>&nbsp;&nbsp;&nbsp;&nbsp;</td>
   </tr>
 </table>
+</div>
 ]]
 
 local function get_infobar()
@@ -89,8 +91,31 @@ local function get_infobar()
 	return true, replace
 end
 
-local ok, body = get_infobar()
-if ok then
-	ngx.arg[1] =  ngx.re.sub(ngx.arg[1], "\\<body[^\\>]*\\>", "$0 " .. body , "jom")
-	ngx.log(ngx.INFO, "### add infobar. ###")
+local content_type = ngx.header["Content-Type"]
+function split(s, delimiter)
+    local result = {};
+    for match in string.gmatch(s, "[^"..delimiter.."]+") do
+        table.insert(result, match);
+    end
+    return result;
+end
+
+if content_type == nil then 
+   ngx.log(ngx.INFO, "---- ignore type: ", tostring(content_type));
+   return 
+end
+local arr = split(content_type, ";")
+content_type = arr[1]
+if content_type == "text/plain" or content_type == "text/html" then
+	local ok, infobar = get_infobar()
+	if ok then
+		-- if ngx.var.uri == "/" then 
+			ngx.arg[1] =  ngx.re.sub(ngx.arg[1], "\\<body[^\\>]*\\>", "$0 " .. infobar , "jom")
+		-- else
+		-- 	ngx.arg[1] =  ngx.re.sub(ngx.arg[1], [[<div id="pms" style="display:none"></div>]], infobar , "jom")
+		-- end
+		ngx.log(ngx.INFO, "### add infobar. ###")
+	end
+else
+    ngx.log(ngx.INFO, "---- ignore type: ", content_type);
 end

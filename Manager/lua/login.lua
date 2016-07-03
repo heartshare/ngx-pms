@@ -66,8 +66,9 @@ function _M.login_post()
 
     local dao = userdao:new()
 	local ok, userinfo = dao:get_by_name(args.username)
-	if ok then
+	if ok and userinfo then
 		local pwd_md5 = util.make_pwd(args.password)
+		ngx.log(ngx.INFO, "input password:", pwd_md5, " db password:", tostring(userinfo.password))
 		if userinfo.password ~= pwd_md5 then
 			args["errmsg"] = "用户名或密码错误！"
     		_M.login_render(args)
@@ -84,7 +85,12 @@ function _M.login_post()
 
 		util.redirect(args.uri)
 	else 
-		args["errmsg"] = "用户名或密码错误！"
+		ngx.log(ngx.INFO, " get user by name[", args.username, "] failed! reason:", tostring(userinfo))
+		if userinfo == nil then 
+			args["errmsg"] = "用户不存在！"
+		else 
+			args["errmsg"] = "用户名或密码错误！"
+		end
     	_M.login_render(args)
 	end
 

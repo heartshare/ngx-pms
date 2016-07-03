@@ -13,7 +13,8 @@ local url = require("Manager.lua.urlview")
 local login = require("Manager.lua.login")
 local dwz = require("Manager.lua.dwzutil")
 local util = require("util.util")
-local cookiedao = require("dao.cookie_dao")
+local apputil = require("Manager.lua.apputil")
+
 local tmpl_caching = config.tmpl_caching
 if tmpl_caching == nil then
 	tmpl_caching = false
@@ -22,13 +23,9 @@ end
 
 local function main_render()
 	template.caching(tmpl_caching)
-	template.render("dwz_base.html", {userinfo=ngx.ctx.userinfo})
+    local sel_app = apputil.sel_app_get(ngx.ctx.userinfo.id)
+	template.render("dwz_base.html", {userinfo=ngx.ctx.userinfo, sel_app=sel_app})
 	ngx.exit(0)
-end
-
-local function permission_apply()
-	local ok, err = cookiedao.clean_userinfo()
-	ngx.say(dwz.cons_resp(200, "权限应用成功！"))
 end
 
 local uri = ngx.var.uri
@@ -40,15 +37,20 @@ end
 
 local router = {
 	["/"] = main_render,
-	["/perm_apply"] = permission_apply,
+	-- ["/perm_apply"] = permission_apply,
 	["/app/list"] = app.list_render,
 	["/app/add"] = app.add_render,
 	["/app/add_post"] = app.add_post,
+	["/app/change_current"] = app.sel_app_render, 
+	["/app/change_current_post"] = app.sel_app_post, 
 	["/user/list"] = user.list_render,
 	["/user/add"] = user.add_render,
 	["/user/add_post"] = user.add_post,
 	["/user/detail"] = user.detail_render,
 	["/user/del"] = user.del_post,
+	["/user/app_change"] = user.app_change_render,
+	["/user/app_change_post"] = user.app_change_post,
+
 	["/passport/login"] = login.login_render,
 	["/passport/login_post"] = login.login_post,
 	["/passport/logout"] = login.logout_post,
@@ -66,7 +68,6 @@ local router = {
 	["/url/add"] = url.add_render,
 	["/url/add_post"] = url.add_post,
 	["/url/del"] = url.del_post,
-
 }
 
 if router[uri] then

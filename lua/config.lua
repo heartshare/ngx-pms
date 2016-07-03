@@ -39,4 +39,6 @@ _M.defNumPerPage = 15
 -- Password加密使用的盐，在系统使用之前修改，系统开始使用后，请不要修改。
 _M.password_magic = '#*nright@0Ol1llOO'
 
+_M.sql_debug = true
+
 return _M

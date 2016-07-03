@@ -1,0 +1,50 @@
+<script>
+	function dialogAjaxDoneSelApp(json){
+      if (json.statusCode == DWZ.statusCode.ok){
+            if (json.navTabId){
+                  navTab.reload(json.forwardUrl, {navTabId: json.navTabId});
+            } else if (json.rel) {
+                  var $pagerForm = $("#pagerForm", navTab.getCurrentPanel());
+                  var args = $pagerForm.size()>0 ? $pagerForm.serializeArray() : {}
+                  navTabPageBreak(args, json.rel);
+            }
+            if ("closeCurrent" == json.callbackType) {
+                  $.pdialog.closeCurrent();
+            }
+            $("#sel_app_link").text(json.message);
+     }
+}
+</script>
+
+<div class="pageContent">
+	<form method="post" action="/app/change_current_post" class="pageForm required-validate" 
+				onsubmit="return validateCallback(this, dialogAjaxDoneSelApp);">
+		<div class="pageFormContent" layoutH="60">
+			<p class="row_add">
+				<label class="row_add">选择应用：</label>
+				<select class="combox" name="app" style="width: 200px;">
+					{% if ngx.ctx.userinfo and ngx.ctx.userinfo.apps then %}
+					{% for i, app in ipairs(ngx.ctx.userinfo.apps) do %}
+			      		<option value="{{app}}"
+						{% if app == sel_app then %}
+							selected="selected"
+						{% end %}
+			      		>{{app}}</option>
+			      	{% end %}
+			      	{% end %}
+				</select>
+			</p>
+		</div>
+		<div class="formBar">
+			<ul>
+				<li><div class="buttonActive"><div class="buttonContent">
+					<button type="submit" >保存</button>
+					</div></li>
+				<li>
+					<div class="button"><div class="buttonContent"><button type="button" class="close">取消</button></div>
+				</li>
+				<li>&nbsp;&nbsp;&nbsp;&nbsp;</li>
+			</ul>
+		</div>
+	</form>
+</div>

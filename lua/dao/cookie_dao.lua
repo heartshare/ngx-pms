@@ -43,6 +43,23 @@ function _M.cookie_set(cookie, userinfo)
 	end
 end
 
+function _M.userinfo_del(userid)
+	local cache = ngx.shared[cachename]
+	if cache then
+		local key_userinfo = "user:" .. userid
+
+		local ok, err = cache:delete(key_userinfo)
+		if not ok then
+			ngx.log(ngx.ERR, "cache:safe_set(", key_userinfo, ") failed! err:", err)
+			return false
+		end
+		return true
+	else
+		ngx.log(ngx.ERR, "lua_shared_dict named '", cachename, "' not defined!")
+		return false
+	end
+end
+
 local function get_userinfo_from_db(cache, userid)
 	local key_userinfo = "user:" .. userid
 	local exptime = config.cookie_config.expires + ngx.time()
@@ -84,7 +101,6 @@ function _M.cookie_get(cookie)
 		local key_userinfo = "user:" .. userid
 		local value, flags = cache:get(key_userinfo)
 		if not value then
-			ngx.log(ngx.INFO, "-------------- 11111111 ----------------------")
 			return get_userinfo_from_db(cache, userid)
 		end
 		local userinfo, err = json.loads(value)

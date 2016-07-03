@@ -21,23 +21,18 @@
 			</p>
 
 			<p class="row_add">
-				<label class="row_add">管理员信息</label>
-				<label class="row_add">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</label>
+				<label class="row_add">管理员</label>
+				<select class="combox" name="user" style="width: 200px;">
+					{% if users then %}
+					{% for i, user in ipairs(users) do 
+						if user.manager ~= "super" then 
+					%}
+			      		<option value="{{user.id}}">{{user.username}}</option>
+			      	{% 	end 
+			      	    end %}
+			      	{% end %}
+				</select>
 			</p>
-						
-			<p class="row_add">
-				<label class="row_add">用户名：</label>
-				<input id="username" name="username" class="required alphanumeric" type="text" value="{{username}}" size="30" maxlength="64"/>
-			</p>
-			<p class="row_add">
-				<label class="row_add">EMAIL：</label>
-				<input id="email" name="email" class="required email" type="text" value="{{email}}" size="30" maxlength="128"/>
-			</p>
-			<p class="row_add">
-				<label class="row_add">TEL:</label>
-				<input id="tel" name="tel" class="phone" type="text" value="{{tel}}" size="30" maxlength="16"/>
-			</p>
-			
 		</div>
 		<div class="formBar">
 			<ul>

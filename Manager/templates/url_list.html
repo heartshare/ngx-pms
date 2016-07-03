@@ -39,7 +39,7 @@
 				<td>{{record.url}}</td>
 				<td>{{type_maps[record.type] or record.type}}</td>
 				<td>{{record.app}}</td>
-				<td>{{record.permission}}</td>
+				<td>{{perm_map[record.permission] or record.permission}}</td>
 				<td>{{util.localtime(record.create_time)}}</td>
 				<td>{{util.localtime(record.update_time)}}</td>
 			</tr>

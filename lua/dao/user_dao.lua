@@ -66,7 +66,7 @@ local function _get_user_permission(userid, app)
     local permission = nil
     local dao = userpermdao:new()
     local ok, user_perms = dao:get(userid, app)
-    if ok then
+    if ok and user_perms then
         user_permissions = user_perms.permissions
         permission = user_perms.permission
     else 
@@ -80,12 +80,12 @@ local function _get_role_permissioin(role_id)
     if role_id and role_id ~= "" then
         local rdao = roledao:new()
         local ok, role = rdao:get_by_id(role_id)
-        if not ok then
-            ngx.log(ngx.ERR, "roledao:get_by_id(", role_id, ") failed! err:", tostring(role))
-        else 
+        if ok and role then
             if role.permissions and type(role.permissions) == 'table' then
                 role_permissions = role.permissions
-            end
+            end            
+        else 
+            ngx.log(ngx.ERR, "roledao:get_by_id(", role_id, ") failed! err:", tostring(role))
         end
     end
     return role_permissions
@@ -113,8 +113,12 @@ function _M:save(values)
     return self.dao:save(values)
 end
 
-function _M:update(values, update_by_values)
-    return self.dao:update(values, update_by_values)
+function _M:saveOrUpdate(values)
+    return self.dao:saveOrUpdate(values, "id", {"create_time"})
+end
+
+function _M:update(values, select)
+    return self.dao:update(values, select)
 end
 
 function _M:exist(field, value)
@@ -142,10 +146,10 @@ function _user_get_internal(dao, id, username, app)
         ok, obj = dao:get_by("where username=" .. username)
     else
         ngx.log(ngx.ERR, "_user_get_internal failed! args 'id','username' missing!")
-        return false, error.err_data_not_exist
+        return true, nil
     end
     
-    if not ok then
+    if not ok or obj == nil then
         return  ok, obj
     end
 
@@ -154,6 +158,11 @@ function _user_get_internal(dao, id, username, app)
 
     if obj.permission then
         permissions = util.split(obj.permission, "|")
+    end
+    local apps = nil
+    if obj.app then 
+        apps = util.split(obj.app, "|")       
+        obj.apps = apps
     end
 
     local role_permissions = _get_role_permissioin(obj.role_id)

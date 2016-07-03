@@ -59,7 +59,7 @@ end
 function _M:get_by_id(id)
 	id = ngx.quote_sql_str(id)
     local ok, obj = self.dao:get_by("where id=" .. tostring(id))
-    if not ok then
+    if not ok or obj == nil then
         return  ok, obj
     end
 

@@ -33,18 +33,37 @@
 	</div>
 	</form>
 </div>
+<script>
+	var old_click = $("#app_change").click;
+	$("#app_change").bind("click", function(event){		
+		var $tr = $("table .selected")
+		var $tds = $tr.children()
+		if($($tds[5]).html()=="<div>super</div>"){
+			alertMsg.warn("超级管理员不能被修改应用");
+			event.stopPropagation();
+			return false;
+		}
+		return true;
+	});
+</script>
 <div class="pageContent">
 	<div class="panelBar">
 		<ul class="toolBar">
 			<li><a class="add" href="/user/add" target="dialog" rel="dlg_adduser" height="450" width="480" title="添加用户"><span>添加</span></a></li>
 			<li><a class="delete" href="/user/del?id={id}" target="ajaxTodo" title="确定要删除吗?"><span>删除</span></a></li>
+			{% if ngx.ctx.userinfo.manager == "super" then %}
+			<li><a class="edit" href="/user/app_change?id={id}" target="dialog"  height="320" width="480" title="修改用户管理的应用">
+				<span id="app_change">修改应用</span>
+			</a></li>
+			{% else %}
 			<li><a class="edit" href="/user/add?id={id}" target="dialog"  height="450" width="480" title="修改用户"><span>修改</span></a></li>
 			<li class="line">line</li>
-			<li><a class="add" href="/perm_apply" target="ajaxTodo" ><span>应用</span></a></li>
-			<span>注意：修改权限(角色)后，要用户会话过期后才生效，需要立即生效设置请点击左侧【应用】按钮</span>
+			<li>&nbsp;</li>
+			{% end %}
 		</ul>
 	</div>
-	<table class="table" width="100%" layoutH="112">
+
+	<table class="table" width="100%" layoutH="112" id="userlist">
 		<thead>
 			<tr>
 				<th width="20">ID</th>

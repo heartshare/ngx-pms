@@ -35,7 +35,7 @@ function _M:update(values, update_by_values)
 end
 
 function _M:saveOrUpdate(values)
-    return self.dao:saveOrUpdate(values)
+    return self.dao:saveOrUpdate(values, {"userid", "app"}, {"create_time"})
 end
 
 local function get_where_sql(userid, app)
