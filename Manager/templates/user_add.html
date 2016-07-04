@@ -9,8 +9,10 @@
 			{% end %}
 			>
 		<div class="pageFormContent" layoutH="60">
+			<input type="hidden" name="app" value="{{app}}">
 			{% if userinfo then %}
 			<input type="hidden" name="id" value="{{userinfo.id}}">
+			<input type="hidden" name="user_app" value="{{userinfo.app}}">
 			<input type="hidden" name="manager" value="{{userinfo.manager}}">
 			{% end %}
 			<p class="row_add">

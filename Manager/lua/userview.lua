@@ -151,11 +151,12 @@ function _M.add_render()
     local id = tonumber(args.id)
 	
     local cur_userinfo = ngx.ctx.userinfo
+    local app, apps = viewpub.get_app_and_apps(true)
 
     local ok, userinfo = nil
     if id then
         local dao = userdao:new()
-        dao:set_app(cur_userinfo.app)
+        dao:set_app(app)
         ok, userinfo = dao:get_by_id(id)
         if not ok or userinfo == nil then
             if userinfo == nil then 
@@ -167,7 +168,7 @@ function _M.add_render()
         end
     end
     
-    local app, apps = viewpub.get_app_and_apps(true)
+    
 	local permissions = viewpub.get_permissions(app)
     -- 权限ID->权限名称的映射表，用于WEB页面展示使用。
     local permissions_all = viewpub.get_permissions()
@@ -193,7 +194,7 @@ function _M.add_render()
         cur_manager = ngx.ctx.userinfo.manager
     end
     local render_args = {permission_others=permissions, perm_map=perm_map, 
-            app_map=app_map, app_others=app_others, apps=apps,
+            app_map=app_map, app_others=app_others, apps=apps, app=app,
              roles=roles, userinfo=userinfo,cur_manager=cur_manager}
     ngx.log(ngx.INFO, "render_args: ", json.dumps(render_args))
 
@@ -215,14 +216,14 @@ function _M.add_post()
     local permission = args.permission or {}
     local create_time = ngx.time()
     local update_time = ngx.time()
-
     local cur_userinfo = ngx.ctx.userinfo
-    local permission_app = cur_userinfo.app
+    local user_app = args.user_app or app
+    
     if type(permission) == 'table' then
         permission = table.concat(permission, "|")
     end
     local userinfo = {username=username, email=email, tel=tel,
-    					app=app,manager=manager,role_id=role_id,
+    					app=user_app,manager=manager,role_id=role_id,
     					create_time=create_time,update_time=update_time}
     
     -- 检查用户是否存在
@@ -281,18 +282,18 @@ function _M.add_post()
         end
         local dao = userpermdao:new(connection)
         if permission == nil or permission == "" then
-            local ok, err = dao:delete(id, permission_app)
+            local ok, err = dao:delete(id, app)
             if not ok then
                 if tx_ok then 
                     tx_ok, tx_err = mysql:tx_rollback(connection)
                 end
                 mysql:connection_put(connection)
-                ngx.log(ngx.ERR, "userpermdao:delete(", id,",", permission_app, ") failed! err:", tostring(err))
+                ngx.log(ngx.ERR, "userpermdao:delete(", id,",", app, ") failed! err:", tostring(err))
                 ngx.say(dwz.cons_resp(300, "修改用户权限时出错了:" .. tostring(err)))
                 ngx.exit(0)
             end
         else
-            local userperm_values = {userid=id, app=permission_app, permission=permission, 
+            local userperm_values = {userid=id, app=app, permission=permission, 
                                      create_time=ngx.time(), update_time=ngx.time()}
             local ok, err = dao:saveOrUpdate(userperm_values)
             if not ok then
@@ -366,7 +367,7 @@ function _M.add_post()
 
         if permission ~= nil and permission ~= "" then   
             local dao = userpermdao:new(connection)         
-            local userperm_values = {userid=id, app=permission_app, permission=permission, 
+            local userperm_values = {userid=id, app=app, permission=permission, 
                                      create_time=ngx.time(), update_time=ngx.time()}
             local ok, err = dao:saveOrUpdate(userperm_values)
             if not ok then
