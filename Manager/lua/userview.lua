@@ -217,7 +217,7 @@ function _M.add_post()
     local create_time = ngx.time()
     local update_time = ngx.time()
     local cur_userinfo = ngx.ctx.userinfo
-    local user_app = args.user_app or app
+    local user_app = args.user_app or ''
     
     if type(permission) == 'table' then
         permission = table.concat(permission, "|")
