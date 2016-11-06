@@ -41,7 +41,7 @@ function _M.list_render()
 	local dao = userdao:new()
 	local pageNum = tonumber(args.pageNum) or 1
 	local numPerPage = tonumber(args.numPerPage) or config.defNumPerPage
-	local ok, users = dao:list(args, pageNum, numPerPage)
+	local ok, users = dao:list_by_args(args, pageNum, numPerPage)
 	if not ok then
 		errmsg = users
 		users = nil
@@ -176,7 +176,7 @@ function _M.add_render()
     local app_map = viewpub.app_map(apps)
 
     local dao = roledao:new()
-    local role_ok, roles = dao:list(app, 1, 1024)
+    local role_ok, roles = dao:list_by_app(app, 1, 1024)
     if not role_ok then
         ngx.log(ngx.ERR, "roledao:list(", tostring(roles), ") failed! err:", tostring(roles))
         roles = {{id="", name="无", remark=""}}
@@ -295,13 +295,13 @@ function _M.add_post()
         else
             local userperm_values = {userid=id, app=app, permission=permission, 
                                      create_time=ngx.time(), update_time=ngx.time()}
-            local ok, err = dao:saveOrUpdate(userperm_values)
+            local ok, err = dao:upsert(userperm_values)
             if not ok then
                 if tx_ok then 
                     tx_ok, tx_err = mysql:tx_rollback(connection)
                 end
                 mysql:connection_put(connection)
-                ngx.log(ngx.ERR, "userpermdao:saveOrUpdate(", json.dumps(userperm_values), ") failed! err:", tostring(err))
+                ngx.log(ngx.ERR, "userpermdao:upsert(", json.dumps(userperm_values), ") failed! err:", tostring(err))
                 ngx.say(dwz.cons_resp(300, "修改用户权限时出错了:" .. tostring(err)))
                 ngx.exit(0)
             end
@@ -369,13 +369,13 @@ function _M.add_post()
             local dao = userpermdao:new(connection)         
             local userperm_values = {userid=id, app=app, permission=permission, 
                                      create_time=ngx.time(), update_time=ngx.time()}
-            local ok, err = dao:saveOrUpdate(userperm_values)
+            local ok, err = dao:upsert(userperm_values)
             if not ok then
                 if tx_ok then 
                     tx_ok, tx_err = mysql:tx_rollback(connection)
                 end
                 mysql:connection_put(connection)
-                ngx.log(ngx.ERR, "userpermdao:saveOrUpdate(", json.dumps(userperm_values), ") failed! err:", tostring(err))
+                ngx.log(ngx.ERR, "userpermdao:upsert(", json.dumps(userperm_values), ") failed! err:", tostring(err))
                 ngx.say(dwz.cons_resp(300, "保存用户权限时出错了:" .. tostring(err)))
                 ngx.exit(0)
             end

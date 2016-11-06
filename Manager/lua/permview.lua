@@ -35,7 +35,7 @@ function _M.list_render()
 
     local totals = 0
     local dao = permdao:new()
-    local ok, permissions = dao:list(app, pageNum, numPerPage)
+    local ok, permissions = dao:list_by_app(app, pageNum, numPerPage)
     if not ok then
         errmsg = permissions
         ngx.log(ngx.ERR, "permdao:list(", tostring(app), ") failed! err:", tostring(permissions))        

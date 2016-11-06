@@ -24,7 +24,8 @@
  
 # 部署
 * 部署请参见[部署文档](docs/deploy.md)
-* 百度百科示例配置请参见[百度百科配置示例](docs/demo_baike/README.md)
+* 注意事项[注意事项](docs/usage.md)
+* OpenResty官网示例配置请参见[OpenResty官网配置示例](docs/demo_or/README.md)
 
 Authors
 =======

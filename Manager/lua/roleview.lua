@@ -4,7 +4,6 @@ date: 20151014
 ]]
 local template = require "resty.template"
 local config = require("config")
-local permdao = require("dao.perm_dao")
 local roledao = require("dao.role_dao")
 local viewpub = require("viewpub")
 local json = require("util.json")
@@ -35,7 +34,7 @@ function _M.list_render()
 
     local totals = 0
     local dao = roledao:new()
-    local ok, roles = dao:list(app, pageNum, numPerPage)
+    local ok, roles = dao:list_by_app(app, pageNum, numPerPage)
     if not ok then
         errmsg = roles
         ngx.log(ngx.ERR, "roledao:list(", tostring(app), ") failed! err:", tostring(roles))

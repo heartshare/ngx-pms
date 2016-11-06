@@ -8,6 +8,7 @@ local mysql = require("resty.mysql")
 local json = require("util.json")
 local error = require('dao.error')
 local util = require("util.util")
+local http = require("resty.http_client")
 
 local _M = {}
 
@@ -30,7 +31,17 @@ function mt.connection_get(self)
 
 	client:set_timeout(timeout)	--10秒
 
-	local db_ip = self.db["db_ip"] or self.db["host"]
+	local db_ip = self.db["db_ip"]
+	if db_ip == nil then
+		db_ip = self.db["host"]
+		if not http.is_ip(db_ip) then
+		    local addr = http.dns_query(db_ip)
+		    if addr then
+		        db_ip = addr
+		    end
+		end
+		self.db["db_ip"] = db_ip
+	end
 
 	local options = {
 		host = db_ip,
@@ -102,7 +113,7 @@ local function mysql_query_internal(mysql_mgr,sql, connection)
 			log_level = ngx.INFO
 		end
 		ngx.log(log_level, "mysql:query(", string.sub(sql, 1, 500), ") failed! err:", tostring(errmsg), ", errno:", tostring(errno))
-		return	false, error.err_sql, errno
+		return	false, error.err_sql, errno, errmsg
 	end
 
 	return	true, result
@@ -121,28 +132,28 @@ function mt.tx_rollback(self, connection)
 end
 
 function mt.query(self, sql, connection)
-    local ok, res, errno = mysql_query_internal(self, sql, connection)
+    local ok, res, errno, errmsg = mysql_query_internal(self, sql, connection)
     if not ok then
-        return nil, res, errno
+        return nil, res, errno, errmsg
     end
         
     return res
 end
 
 function mt.execute(self, sql, connection)
-    local ok, res, errno = mysql_query_internal(self, sql, connection)
+    local ok, res, errno, errmsg = mysql_query_internal(self, sql, connection)
     if not ok then
-        return -1, res, errno
+        return -1, res, errno, errmsg
     end
 
     return res.affected_rows, res.insert_id
 end
 
 function mt.execute_bat(self, sql, connection)
-    local ok, res, errno = mysql_query_internal(self, sql, connection)
+    local ok, res, errno, errmsg = mysql_query_internal(self, sql, connection)
     if not ok then
         mysql_query_internal(self, "ROLLBACK", connection)
-        return -1, res, errno
+        return -1, res, errno, errmsg
     end
 
     return res.affected_rows

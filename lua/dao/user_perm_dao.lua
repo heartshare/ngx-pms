@@ -22,20 +22,13 @@ function _M:new(connection)
                     create_time='number',
                     update_time='number'}, connection)
 
-    return setmetatable({ dao = dao}, mt)
+    return basedao.extends(_M, dao)
 end
 
 
-function _M:save(values)
-    return self.dao:save(values)
-end
 
-function _M:update(values, update_by_values)
-    return self.dao:update(values, update_by_values)
-end
-
-function _M:saveOrUpdate(values)
-    return self.dao:saveOrUpdate(values, {"userid", "app"}, {"create_time"})
+function _M:upsert(values)
+    return self:upsert_by(values, {"userid", "app"}, {"create_time"})
 end
 
 local function get_where_sql(userid, app)
@@ -48,7 +41,7 @@ end
 
 function _M:get(userid, app)
     local where = get_where_sql(userid, app)
-    local ok, objs = self.dao:list_by(where)
+    local ok, objs = self:list_by(where)
     if not ok then
         return ok, objs
     end
@@ -72,7 +65,7 @@ end
 
 function _M:delete(userid, app)
     local where = get_where_sql(userid, app)
-    return self.dao:delete_by(where)
+    return self:delete_by(where)
 end
 
 

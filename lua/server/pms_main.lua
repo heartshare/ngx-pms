@@ -205,7 +205,7 @@ local function get_url_permission(app, url)
 	if not ok or url_perm == nil then
 		return ok, url_perm 
 	end
-	return ok, url_perm.permission 
+	return ok, url_perm.permission, url_perm
 end
 
 local function http_resp(status, body, cookie)
@@ -250,8 +250,10 @@ local function right_check()
 
 	local username = userinfo.username
 	local userinfo_json = json.dumps(userinfo)
-	local ok, url_permission = get_url_permission(app, uri)
-	ngx.log(ngx.INFO, "app [",tostring(app),"] url [", tostring(uri), "] permission: ", tostring(url_permission))
+	local ok, url_permission, url_perm = get_url_permission(app, uri)
+	ngx.log(ngx.INFO, string.format("app [%s] url [%s] matched: {type: %s, url: %s, perm: %s}", 
+				tostring(app),tostring(uri), 
+				tostring(url_perm.type), tostring(url_perm.url),tostring(url_perm.permission)))
 	if ok and url_permission then
 		if url_permission == "ALLOW_ALL" then -- 所有人可访问
 			ngx.log(ngx.INFO, "url [", app, ".", uri, "] permission is [", 

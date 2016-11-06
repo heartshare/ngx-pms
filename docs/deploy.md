@@ -154,7 +154,7 @@ values('root', 'jie123108@163.com', '13380333333', '32a8fbbe6412045fb333bcfe1785
 --------------
 权限代理（pms-agent）是需要部署在要管理的应用的反向代理nginx上面：
 
-#### nginx.conf配置(可参考ngx-pms/conf/pms-agent.conf,并修改其中文件路径)
+#### nginx.conf配置(可参考ngx-pms/conf/pms-agent-or.conf,并修改其中文件路径)
 ```nginx
     #保存cookie信息的共享内存。
     lua_shared_dict cookies 5m;
@@ -164,11 +164,11 @@ values('root', 'jie123108@163.com', '13380333333', '32a8fbbe6412045fb333bcfe1785
     lua_package_path "/path/to/ngx-pms/lua/?.lua;/path/to/ngx-pms/libs/?.lua;/path/to/ngx-pms/manager/lua/?.lua;;";
 
     # pms-agent权限代理(可以与“pms授权接口”部署在一个nginx上，也可以分开部署)
-    # 示例配置(www.w3school.com.cn)
+    # 示例配置(openresty.org)
     server {
         listen       80 default;
-        listen       1200 default;
-        server_name www.w3school.com.cn;
+        listen       1201 default;
+        server_name openresty.org;
 
         # 以/pms开头的请求，需要代理到“pms授权接口”
         location /pms {
@@ -191,18 +191,18 @@ values('root', 'jie123108@163.com', '13380333333', '32a8fbbe6412045fb333bcfe1785
             proxy_pass    http://127.0.0.1:8000;
         }
         # 清除响应体大小。
-        header_filter_by_lua ' ngx.header.content_length = nil '; 
+        header_filter_by_lua_file /path/to/ngx-pms/lua/agent/header_filter.lua;
         # 过滤器，在相应页面，加上信息条。
         body_filter_by_lua_file /path/to/ngx-pms/lua/agent/body_filter.lua;
         
         # 应用的反向代理设置。
         location / {
             # $app变量的值，必须是已经在管理后台上已经添加成功的应用ID.
-            set $app w3school;
+            set $app openresty;
             # 权限检查的脚本。
             access_by_lua_file /path/to/ngx-pms/lua/agent/permission_check.lua;
 
-            proxy_set_header Host www.w3school.com.cn;
+            proxy_set_header Host openresty.org;
             proxy_set_header X-Real-IP $remote_addr;
             proxy_set_header REMOTE-HOST $remote_addr;
             proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
@@ -218,7 +218,7 @@ values('root', 'jie123108@163.com', '13380333333', '32a8fbbe6412045fb333bcfe1785
             proxy_temp_file_write_size 256k;
             proxy_max_temp_file_size 128m;
             # 应用的实际地址。
-            proxy_pass    http://www.w3school.com.cn;
+            proxy_pass    https://openresty.org;
         }
     }
 ```

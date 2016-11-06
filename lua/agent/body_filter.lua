@@ -4,42 +4,11 @@ date: 20151017
 ]]
 local config = require("config")
 local filter_ext = require("agent.filter_ext")
-
-local login_url = "/pms/login"
+local agent_pub = require("agent.agent_pub")
 local logout_url = "/pms/logout"
 local change_pwd_url = "/pms/change_pwd"
-local change_pwd_post_url = "/pms/change_pwd_post"
-local login_post_url = "/pms/login_post"
-local no_access_page = "/pms/no_access_page"
-local right_check_url = "/pms/right_check"
 
-local ignore_list = {login_url, login_post_url, right_check_url, change_pwd_url, change_pwd_post_url}
-
-local function is_ignore_url(url)
-	if ignore_list == nil then
-		return false
-	end
-	local matched = false
-	-- 精确匹配。
-	if type(ignore_list)=='table' then
-		for i, item in ipairs(ignore_list) do 
-			--ngx.log(ngx.INFO, "### compare(", item, ",", url, ")...")
-			if item == url then
-				matched = true
-				break
-			end
-		end
-	end
-	return matched
-end
-
-ngx.log(ngx.INFO, "url:", ngx.var.uri)
-if is_ignore_url(ngx.var.uri) then
-	ngx.log(ngx.INFO, "### body-filter ignore : ", ngx.var.uri)
-	return
-end
-
-local topbar_style = [[
+local def_topbar_style = [[
 <style type="text/css">
 <!--
 .topbar {
@@ -86,16 +55,25 @@ local topbar_style = [[
 -->
 </style>
 ]]
+
+
+
 local topbar_tpl = [[
 <div id="topbar" class="topbar">
-<div id="pms-sysname" class="pms-sysname">Nginx Permission System</div>
-<div id="pms-info" class="pms-info"> 
-    <div id="pms-username" class="pms-username">USER: %s</div>
-    <div id="pms-password" class="pms-password"><a %s>Change Password</a></div>
-    <div id="pms-logout" class="pms-logout"><a href="%s" target="_self">Logout</a></div>
-</div>
+	<div id="pms-sysname" class="pms-sysname">NGX-PMS</div>
+	<div id="pms-info" class="pms-info"> 
+	    <div id="pms-username" class="pms-username">USER: %s</div>
+	    <div id="pms-password" class="pms-password"><a %s>Change Password</a></div>
+	    <div id="pms-logout" class="pms-logout"><a href="%s" target="_self">Logout</a></div>
+	</div>
 </div>
 ]]
+
+local function get_style()
+	local args = ngx.req.get_uri_args()
+	local app = args.app or ngx.var.app or "def"
+	return filter_ext.get_style(app) or def_topbar_style
+end
 
 local function get_infobar()
 	--template.caching(tmpl_caching)
@@ -112,26 +90,13 @@ local function get_infobar()
 		href = string.format([[href="#" onclick="javascript:alert('have no permission to change password!');"]])
 	end
 	ngx.log(ngx.INFO, "user [", username, "] request...")
-	local replace = topbar_style .. string.format(topbar_tpl, username, href, logout_url)
+	local replace = get_style() .. string.format(topbar_tpl, username, href, logout_url)
 	return true, replace
 end
 
-local content_type = ngx.header["Content-Type"]
-function split(s, delimiter)
-    local result = {};
-    for match in string.gmatch(s, "[^"..delimiter.."]+") do
-        table.insert(result, match);
-    end
-    return result;
-end
 
-if content_type == nil then 
-   ngx.log(ngx.INFO, "---- ignore type: ", tostring(content_type));
-   return 
-end
-local arr = split(content_type, ";")
-content_type = arr[1]
-if content_type == "text/plain" or content_type == "text/html" then
+ngx.log(ngx.INFO, "url:", ngx.var.uri)
+if agent_pub.need_replace() then
 	local ok, infobar = get_infobar()
 	if ok then
 		local n = nil
@@ -151,5 +116,5 @@ if content_type == "text/plain" or content_type == "text/html" then
 		end
 	end
 else
-    ngx.log(ngx.INFO, "---- ignore type: ", content_type);
+    ngx.log(ngx.INFO, "---- ignore url: ", ngx.var.uri);
 end

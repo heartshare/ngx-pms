@@ -20,7 +20,7 @@ function _M.get_app_and_apps(get_apps)
         --可选择多个应用。
         if get_apps then
             local dao = appdao:new()
-            app_ok, apps = dao:list(1, 1024)
+            app_ok, apps = dao:list_all(1, 1024)
             if not app_ok then
                 ngx.log(ngx.ERR, "appdao:list() failed! err:", tostring(apps))
                 apps = {}
@@ -50,7 +50,7 @@ function _M.get_permissions(app, get_sys_perms)
     end
 
     local dao = permdao:new()
-    local perm_ok, permissions = dao:list(app, 1, 1024)
+    local perm_ok, permissions = dao:list_by_app(app, 1, 1024)
     if not perm_ok then
         ngx.log(ngx.ERR, "permdao:list(", tostring(app), ") failed! err:", tostring(permissions))
         permissions = {}

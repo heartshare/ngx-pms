@@ -24,15 +24,15 @@ function _M:new(connection)
                     create_time='number',
                     update_time='number'},connection)
 
-    return setmetatable({ dao = dao}, mt)
+    return basedao.extends(_M, dao)
 end
 
-function _M:list(app, page, page_size)
+function _M:list_by_app(app, page, page_size)
     local sql_where = nil
     if app then
         sql_where = "where app=" .. ngx.quote_sql_str(app)
     end
-    return self.dao:list(sql_where, page, page_size)
+    return self:list(sql_where, page, page_size)
 end
 
 function _M:count(app)
@@ -40,25 +40,13 @@ function _M:count(app)
     if app then
         sql_where = "where app=" .. ngx.quote_sql_str(app)
     end
-    local ok, obj = self.dao:count_by(sql_where)
+    local ok, obj = self:count_by(sql_where)
     return ok, obj
-end
-
-function _M:save(values)
-    return self.dao:save(values)
-end
-
-function _M:update(values, update_by_values)
-    return self.dao:update(values, update_by_values)
-end
-
-function _M:exist(field, value)
-    return self.dao:exist(field, value)
 end
 
 function _M:get_by_id(id)
 	id = ngx.quote_sql_str(id)
-    local ok, obj = self.dao:get_by("where id=" .. tostring(id))
+    local ok, obj = self:get_by("where id=" .. tostring(id))
     if not ok or obj == nil then
         return  ok, obj
     end
@@ -72,26 +60,9 @@ function _M:get_by_id(id)
     return ok, obj
 end
 
-function _M:exist_exclude(field, value, id)
-    return self.dao:exist_exclude(field, value, id)
-end
-
 function _M:delete_by_id(id)
     local where = "where id=" .. ngx.quote_sql_str(id)
-    return self.dao:delete_by(where)
+    return self:delete_by(where)
 end
 
 return  _M
-
---[[
-local appdao = _M
-
-ok, err  = appdao.save({app="KB01", appname="kuaibo 01 proj"})
-ngx.say(ok, err)
-ok, err  = appdao.save({app="KB002", appname="kuaibo 002 proj"})
-ngx.say(ok, err)
-
-local ok, values = appdao.count()
-ngx.say("[", ok, ",", json.dumps(values), "]")
-
-]]

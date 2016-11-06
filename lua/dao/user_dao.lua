@@ -30,7 +30,7 @@ function _M:new(connection)
                     create_time='number',
                     update_time='number'}, connection)
 
-    return setmetatable({ dao = dao}, mt)
+    return basedao.extends(_M, dao)
 end
 
 local function get_where_sql(args)
@@ -91,9 +91,9 @@ local function _get_role_permissioin(role_id)
     return role_permissions
 end
 
-function _M:list(args, page, page_size)   
+function _M:list_by_args(args, page, page_size)   
     local sql_where = get_where_sql(args)
-    local ok, objs = self.dao:list(sql_where, page, page_size)
+    local ok, objs = self:list(sql_where, page, page_size)
     if ok and type(objs) == 'table' then
         for _, obj in ipairs(objs) do 
             local user_permissions, permission = _get_user_permission(obj.id)
@@ -106,28 +106,14 @@ end
 
 function _M:count(args)
     local sql_where = get_where_sql(args)
-    return self.dao:count_by(sql_where)
+    return self:count_by(sql_where)
 end
 
-function _M:save(values)
-    return self.dao:save(values)
+
+function _M:upsert(values)
+    return self:upsert_by(values, "id", {"create_time"})
 end
 
-function _M:saveOrUpdate(values)
-    return self.dao:saveOrUpdate(values, "id", {"create_time"})
-end
-
-function _M:update(values, select)
-    return self.dao:update(values, select)
-end
-
-function _M:exist(field, value)
-    return self.dao:exist(field, value)
-end
-
-function _M:exist_exclude(field, value, id)
-    return self.dao:exist_exclude(field, value, id)
-end
 
     --[[ userinfo属性说明：
     permission: 字符串|分割的原始权限列表
@@ -136,14 +122,14 @@ end
     permissions：用户所有权限列表，map格式。
     permission_alt：权限提示列表。
     ]]
-function _user_get_internal(dao, id, username, app)
+function _M:_user_get_internal(id, username, app)
     local ok, obj 
     if id then
         id = tonumber(id)
-        ok, obj = dao:get_by("where id=" .. tostring(id))
+        ok, obj = self:get_by("where id=" .. tostring(id))
     elseif username then
         username = ngx.quote_sql_str(username)
-        ok, obj = dao:get_by("where username=" .. username)
+        ok, obj = self:get_by("where username=" .. username)
     else
         ngx.log(ngx.ERR, "_user_get_internal failed! args 'id','username' missing!")
         return true, nil
@@ -184,11 +170,11 @@ function _user_get_internal(dao, id, username, app)
 end
 
 function _M:get_by_name(username)
-    return _user_get_internal(self.dao, nil, username, self.app)
+    return self:_user_get_internal(nil, username, self.app)
 end
 
 function _M:get_by_id(userid)
-   return _user_get_internal(self.dao, userid, nil, self.app) 
+   return self:_user_get_internal(userid, nil, self.app) 
 end
 
 function _M:set_app(app)
@@ -198,10 +184,10 @@ end
 
 function _M:delete_by_id(userid)
     local where = "where id=" .. userid
-    return self.dao:delete_by(where)
+    return self:delete_by(where)
 end
 
 function _M:change_pwd(userid, password)
-    return self.dao:update({password=password}, {id=userid})
+    return self:update({password=password}, {id=userid})
 end
 return  _M

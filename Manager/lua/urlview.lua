@@ -34,7 +34,7 @@ function _M.list_render()
 
     local totals = 0
     local dao = urldao:new()
-    local ok, urls = dao:list(app, pageNum, numPerPage)
+    local ok, urls = dao:list_by_app(app, pageNum, numPerPage)
     if not ok then        
         errmsg = urls
         ngx.log(ngx.ERR, "urldao:list(", tostring(app), ") failed! err:", tostring(urls))        

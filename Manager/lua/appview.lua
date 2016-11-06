@@ -29,7 +29,7 @@ function _M.list_render()
 	local dao = appdao:new()
 	local pageNum = tonumber(args.pageNum) or 1
 	local numPerPage = tonumber(args.numPerPage) or config.defNumPerPage
-	local ok, apps = dao:list(pageNum, numPerPage)
+	local ok, apps = dao:list_all(pageNum, numPerPage)
 	if not ok then
 		errmsg = apps
 		apps = nil
@@ -55,7 +55,7 @@ function _M.add_render()
 	local dao = userdao:new()
 	local pageNum = 1
 	local numPerPage = 1024
-	local ok, users = dao:list(args, pageNum, numPerPage)
+	local ok, users = dao:list_by_args(args, pageNum, numPerPage)
 	if not ok then
 	if users == error.err_data_not_exist then
 	    totals = 0
@@ -153,9 +153,9 @@ function _M.add_post()
     end
     userinfo.app = table.concat(userinfo.apps, '|')
     userinfo.manager = 'admin'
-    local ok, err = dao:saveOrUpdate(userinfo)
+    local ok, err = dao:upsert(userinfo)
     if not ok then
-    	ngx.log(ngx.ERR, "userdao:saveOrUpdate(", json.dumps(userinfo), ") failed! err:", tostring(err))
+    	ngx.log(ngx.ERR, "userdao:upsert(", json.dumps(userinfo), ") failed! err:", tostring(err))
     	if tx_ok then 
     		tx_ok, tx_err = mysql:tx_rollback(connection)
     	end

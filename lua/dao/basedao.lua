@@ -28,17 +28,29 @@ local function tableIsNull(res)
     return  ret
 end
 
-local function get_select_sql(tablename, table_meta)
+local function E(key)
+    return "`" .. key .. "`"
+end
+
+--[[
+table_meta: {id='number', user_id='string'}
+excludes: {content=true, exclude_field=true}
+]]
+local function get_select_sql(tablename, table_meta, excludes)
     local sql_select = {}
 
     table.insert(sql_select, "SELECT ")
 
     for k,v in pairs(table_meta) do
-        table.insert(sql_select, string_format('`%s`',k))
-        table.insert(sql_select, ",")
+        if excludes and excludes[k] then 
+            -- continue
+        else
+            table.insert(sql_select, string_format('`%s`',k))
+            table.insert(sql_select, ",")
+        end
     end
     table.remove(sql_select)
-    table.insert(sql_select, " FROM " .. tablename)
+    table.insert(sql_select, " FROM " .. E(tablename))
     return table.concat(sql_select);
 end
 
@@ -64,7 +76,7 @@ end
 local function get_insert_or_replace_sql(tablename, table_meta, obj, operate)
     local sql_insert = {}
     local sql_values = {}
-    table.insert(sql_insert, operate .. " into " .. tablename .. "(")
+    table.insert(sql_insert, operate .. " into " .. E(tablename) .. "(")
     table.insert(sql_values, "values(")
     for k,v in pairs(obj) do
         if table_meta[k] then 
@@ -92,7 +104,7 @@ end
 
 local function get_update_sql(tablename, table_meta, obj, update_by)
     local sql_update = {}
-    table.insert(sql_update, "UPDATE " .. tablename .. " ")
+    table.insert(sql_update, "UPDATE " .. E(tablename) .. " ")
     table.insert(sql_update, "SET ")
     for k,v in pairs(obj) do
         if table_meta[k] then 
@@ -118,28 +130,41 @@ local function get_update_sql(tablename, table_meta, obj, update_by)
     return table.concat(sql_update) 
 end
 
+function _M.extends(this_module, super_obj)
+    local super_mt = getmetatable(super_obj)
+    -- 当方法在子类中查询不到时，再去父类中去查找。
+    setmetatable(this_module, super_mt)
+    -- 这样设置后，可以通过self.super.method(self, ...) 调用父类的已被覆盖的方法。
+    super_obj.super = setmetatable({}, super_mt)
+    return setmetatable(super_obj, { __index = this_module })
+end
+
 local mt = { __index = _M }
 
 function _M:new(tablename, table_meta,  connection, mysql_util)
-    --local sql_select = "SELECT " .. table.concat(table_meta, ",") .. " FROM " .. tablename
-    --local sql_insert = "insert into " .. tablename .. "(" .. table.concat(table_meta, ",") .. ")"
     local sql_select = get_select_sql(tablename, table_meta)
-    local sql_count = "SELECT COUNT(*) as c FROM " .. tablename
-    local sql_delete = "DELETE FROM " .. tablename
+    local sql_count = "SELECT COUNT(*) as c FROM " .. E(tablename)
+    local sql_delete = "DELETE FROM " .. E(tablename)
     if mysql_util == nil then 
         mysql_util = def_mysql_util
     end
     return setmetatable(
         { 
+            mysql_util = mysql_util,
             tablename = tablename, 
             table_meta = table_meta, 
             connection=connection, 
             sql_select=sql_select, 
             sql_count=sql_count, 
-            sql_delete=sql_delete,
-            mysql_util = mysql_util,
+            sql_delete=sql_delete
         },
         mt)
+end
+
+-- 设置列表时，要排除的字段。
+function _M:set_list_excludes(excludes)
+    self.excludes = excludes 
+    self.sql_select_list = get_select_sql(self.tablename, self.table_meta, excludes)
 end
 
 function _M:get_one(sql)
@@ -171,10 +196,10 @@ function _M:get_by(where)
         sql = sql .. " " .. where
     end
    
-    return self:get_one(sql)
+    return self.get_one(self, sql)
 end
 
-function _M.list_internal(self, sql)
+function _M:list_internal(sql)
     if sql_debug then 
         ngx.log(ngx.INFO, "list sql is:", sql)
     end
@@ -202,8 +227,8 @@ function _M.list_internal(self, sql)
     return  true, res
 end
 
-function _M.list_by(self, where, limit, offset, customized_sql)
-    local sql = customized_sql or self.sql_select
+function _M:list_by(where, limit, offset)
+    local sql = self.sql_select_list or self.sql_select
 
     if where then
         sql = sql .. " " .. where
@@ -219,15 +244,14 @@ function _M.list_by(self, where, limit, offset, customized_sql)
 end
 
 
-function _M:list(where, page, page_size,customized_sql)
-    page = page or 1
-    page_size = page_size or 10
+function _M:list(where, page, page_size)
     local limit = page_size
     local offset = nil
-    if page > 1 then
+    if page and page > 1 then
+        page_size = page_size or 100
         offset = (page-1)*page_size
     end
-    return _M.list_by(self, where, limit, offset,customized_sql)
+    return _M.list_by(self, where, limit, offset)
 end
 
 function _M:query_int(sql, fieldname)
@@ -291,7 +315,7 @@ function _M:exist_exclude(field, value, id)
     end
 
     local where = "WHERE id!=" .. id .. " AND " .. field .. "=" .. value
-    local ok, count = _M.count_by(self, where)
+    local ok, count = self:count_by(where)
     if ok then
         return ok, count>0
     else
@@ -304,11 +328,11 @@ function _M:save(values)
     if sql_debug then 
         ngx.log(ngx.INFO, "insert sql:", tostring(sql))
     end
-    local effects, insert_id, errno = self.mysql_util:execute(sql, self.connection)
+    local effects, insert_id, errno, errmsg = self.mysql_util:execute(sql, self.connection)
     if effects == -1 then
         if errno == 1062 then
             ngx.log(ngx.INFO, "execute [", sql, "] failed! err:", tostring(insert_id))
-            return false, error.err_data_exist
+            return false, error.err_data_exist, errmsg
         else
             ngx.log(ngx.ERR, "execute [", sql, "] failed! err:", tostring(insert_id))
             return false, insert_id
@@ -331,10 +355,19 @@ function _M:replace(values)
     return true
 end
 
-function _M:saveOrUpdate(values, id_field, not_update_fields)
-    local ok, err = self:save(values)
+local function def_check_update_cb(ok, err, errmsg)
+    -- ngx.log(ngx.INFO, "ok:", ok, ", err:", err, " errmsg:", errmsg, " matched:", ngx.re.match(errmsg or '', "Duplicate entry '.*' for key 'PRIMARY'"))
+    return not ok and err == error.err_data_exist
+end
+
+function _M:upsert_by(values, id_field, not_update_fields, check_update_cb)
+    local ok, err, errmsg = self:save(values)
     local operate = "save"
-    if not ok and err == error.err_data_exist then 
+    check_update_cb = check_update_cb or def_check_update_cb
+    local need_update = check_update_cb(ok, err, errmsg)
+    ngx.log(ngx.INFO, "check_update(ok:", ok, ",err:", tostring(err), ", errmsg:", tostring(errmsg), "): ", need_update)
+    
+    if need_update then 
         local update = {}
         local select = {}
         for k, v in pairs(values) do 
@@ -376,6 +409,8 @@ function _M:update(values, select)
         ngx.log(ngx.INFO, "update sql:", tostring(sql))
     end
     local effects, err, errno = self.mysql_util:execute(sql, self.connection)
+    -- ngx.log(ngx.ERR, "effects:", effects, ", err:", err, ", errno:", errno)
+
     if effects == -1 then
         ngx.log(ngx.ERR, "execute [", sql, "] failed! err:", tostring(err))
         if errno == 1062 then
@@ -402,6 +437,24 @@ function _M:delete_by(where)
     end
 
     return true, tonumber(res.affected_rows)
+end
+
+-- 支持批量插入
+function _M:multi_save(values)
+  local sql_insert = {}
+  local sql_values = {}
+  for k, v in pairs(values) do
+    local val = {}
+    local insert = {}
+    for ck, cv in pairs(v) do
+      table.insert(insert, string_format('`%s`', ck))
+      table.insert(val, cv)
+    end
+    table.insert(sql_insert, '('..table.concat(insert, ",")..')')
+    table.insert(sql_values, '('..table.concat(val, ",")..')')
+  end
+  local sql = "INSERT INTO "..self.tablename.." "..tostring(sql_insert[1]).." ".."VALUES "..table.concat(sql_values, ",")
+  return self:execute_sql(sql)
 end
 
 function _M:execute_sql(sql)   

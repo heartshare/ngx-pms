@@ -25,16 +25,16 @@ function _M:new(connection)
                     create_time='number',
                     update_time='number'}, connection)
 
-    return setmetatable({ dao = dao}, mt)
+    return basedao.extends(_M, dao)
 end
 
-function _M:list(app, page, page_size)
+function _M:list_by_app(app, page, page_size)
     local sql_where = ""
     if app then
         sql_where = "where app=" .. ngx.quote_sql_str(app)
     end
     sql_where = sql_where .. " order by app asc, url asc"
-    return self.dao:list(sql_where, page, page_size)
+    return self:list(sql_where, page, page_size)
 end
 
 function _M:count(app)
@@ -42,17 +42,9 @@ function _M:count(app)
     if app then
         sql_where = "where app=" .. ngx.quote_sql_str(app)
     end
-    local ok, obj = self.dao:count_by(sql_where)
+    local ok, obj = self:count_by(sql_where)
     
     return ok, obj
-end
-
-function _M:save(values)
-    return self.dao:save(values)
-end
-
-function _M:update(values, update_by_values)
-    return self.dao:update(values, update_by_values)
 end
 
 function _M:_exist_internal(app,type,url, id)
@@ -65,7 +57,7 @@ function _M:_exist_internal(app,type,url, id)
         id = tostring(id)
         where = where .. " AND id != " .. id
     end
-    local ok, count = self.dao:count_by(where)
+    local ok, count = self:count_by(where)
     if ok then
         return ok, count>0
     else
@@ -82,12 +74,12 @@ function _M:exist_exclude(app,type,url, id)
 end
 
 function _M:get_by_id(id)
-    return self.dao:get_by("where id=" .. tostring(id))
+    return self:get_by("where id=" .. tostring(id))
 end
 
 function _M:delete_by_id(id)
     local where = "where id=" .. tostring(id)
-    return self.dao:delete_by(where)
+    return self:delete_by(where)
 end
 
 function _M:url_perm_get(app, url)
@@ -105,7 +97,7 @@ function _M:url_perm_get(app, url)
     local ok, obj, where_ = nil,nil
     for i, where in ipairs(wheres) do
         where_ = where
-        ok, obj = self.dao:get_by(where)
+        ok, obj = self:get_by(where)
         if ok and obj then
             return ok, obj
         elseif not ok then --出错
