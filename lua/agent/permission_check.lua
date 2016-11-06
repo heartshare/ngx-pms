@@ -5,10 +5,10 @@ date: 20151017
 local util = require("util.util")
 local json = require("util.json")
 local ck = require('util.cookie')
-
-local login_url = "/nright/login"
-local no_access_page = "/nright/no_access_page"
-local right_check_url = "/nright/right_check"
+local http_client = require("resty.http_client")
+local login_url = "/pms/login"
+local no_access_page = "/pms/no_access_page"
+local right_check_url = "/pms/right_check"
 
 
 local function uri_args_as_args(ext_args)
@@ -30,7 +30,8 @@ local function check_uri_permission(app, uri, cookie)
     for i = 1,retry_max do    	
     	local args = ngx.encode_args({app=app, uri=uri, cookie=cookie})
         local url = right_check_url_full .. "?" .. args
-        res, err = util.http_get(url, {})
+        local headers = http_client.new_headers()
+        res, err = http_client.http_get(url, headers)
 
         if res then
             ngx.log(ngx.INFO, "check permission request:", url, ", status:", res.status, ",body:", tostring(res.body))

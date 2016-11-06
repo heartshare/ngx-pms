@@ -5,13 +5,13 @@ date: 20151017
 local config = require("config")
 local filter_ext = require("agent.filter_ext")
 
-local login_url = "/nright/login"
-local logout_url = "/nright/logout"
-local change_pwd_url = "/nright/change_pwd"
-local change_pwd_post_url = "/nright/change_pwd_post"
-local login_post_url = "/nright/login_post"
-local no_access_page = "/nright/no_access_page"
-local right_check_url = "/nright/right_check"
+local login_url = "/pms/login"
+local logout_url = "/pms/logout"
+local change_pwd_url = "/pms/change_pwd"
+local change_pwd_post_url = "/pms/change_pwd_post"
+local login_post_url = "/pms/login_post"
+local no_access_page = "/pms/no_access_page"
+local right_check_url = "/pms/right_check"
 
 local ignore_list = {login_url, login_post_url, right_check_url, change_pwd_url, change_pwd_post_url}
 

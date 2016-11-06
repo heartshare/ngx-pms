@@ -31,13 +31,14 @@ local function login_render(args)
 	ngx.header['Content-Type'] = "text/html"
 	
 	template.caching(tmpl_caching)
-	template.render("login.html", args)
+	template.render("agentlogin.html", args)
 	ngx.exit(0)
 end
 
 local function login_page()
 	-- set $template_root /path/to/templates;
 	ngx.header['Content-Type'] = "text/html"
+	ngx.log(ngx.INFO, "---- login page for agent ----")
 	local args = ngx.req.get_uri_args()
 	login_render(args)
 end
@@ -106,13 +107,13 @@ local function change_pwd_page()
 	local cookie = ck.get_cookie()
 	if not cookie then -- 没有登录，不能修改密码
 		ngx.log(ngx.ERR, "change password failed！cookie not found!")
-		util.redirect("/nright/login")
+		util.redirect("/pms/login")
 	end
 	local ok, userinfo = get_user_by_cookie(cookie)
 	if not ok or userinfo == nil then
 		if userinfo == nil then
 			ngx.log(ngx.ERR, "cookie [", cookie, "] not exist in database!")
-			util.redirect("/nright/login")
+			util.redirect("/pms/login")
 		else
 			ngx.exit(ngx.HTTP_INTERNAL_SERVER_ERROR)
 		end
@@ -133,13 +134,13 @@ local function change_pwd_post()
 	local cookie = ck.get_cookie()
 	if not cookie then -- 没有登录，不能修改密码
 		ngx.log(ngx.ERR, "change password failed！cookie not found!")
-		util.redirect("/nright/login")
+		util.redirect("/pms/login")
 	end
 	local ok, userinfo = get_user_by_cookie(cookie)
 	if not ok or userinfo == nil then
 		if userinfo == nil then
 			ngx.log(ngx.ERR, "cookie [", cookie, "] not exist in database!")
-			util.redirect("/nright/login")
+			util.redirect("/pms/login")
 		else
 			ngx.exit(ngx.HTTP_INTERNAL_SERVER_ERROR)
 		end
@@ -195,7 +196,7 @@ local function logout_post()
 		cookiedao.cookie_del(cookie_value)
 	end
 	ck.set_cookie("logouted")
-	util.redirect("/nright/login")
+	util.redirect("/pms/login")
 end
 
 local function get_url_permission(app, url)
@@ -244,6 +245,9 @@ local function right_check()
 			ngx.exit(ngx.HTTP_INTERNAL_SERVER_ERROR)
 		end
 	end
+	-- 隐藏密码。
+	userinfo.password = nil 
+
 	local username = userinfo.username
 	local userinfo_json = json.dumps(userinfo)
 	local ok, url_permission = get_url_permission(app, uri)
@@ -290,13 +294,13 @@ end
 ngx.header['Content-Type'] = "text/html"
 local uri = ngx.var.uri
 local router = {
-	["/nright/right_check"] = right_check,
-	["/nright/login"] = login_page,
-	["/nright/login_post"] = login_post,
-	["/nright/change_pwd"] = change_pwd_page,
-	["/nright/change_pwd_post"] = change_pwd_post,
-	["/nright/logout"] = logout_post,
-	["/nright/no_access_page"] = no_access_page,
+	["/pms/right_check"] = right_check,
+	["/pms/login"] = login_page,
+	["/pms/login_post"] = login_post,
+	["/pms/change_pwd"] = change_pwd_page,
+	["/pms/change_pwd_post"] = change_pwd_post,
+	["/pms/logout"] = logout_post,
+	["/pms/no_access_page"] = no_access_page,
 }
 
 if router[uri] then

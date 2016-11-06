@@ -9,7 +9,7 @@ local ck = require('util.cookie')
 local userdao = require('dao.user_dao')
 local cookiedao = require("dao.cookie_dao")
 local r = require "util.res"
-local dwz = require("Manager.lua.dwzutil")
+local dwz = require("dwzutil")
 
 local login_url = "/passport/login"
 

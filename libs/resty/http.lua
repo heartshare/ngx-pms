@@ -15,6 +15,7 @@ local tbl_concat = table.concat
 local tbl_insert = table.insert
 local ngx_encode_args = ngx.encode_args
 local ngx_re_match = ngx.re.match
+local ngx_re_gsub = ngx.re.gsub
 local ngx_log = ngx.log
 local ngx_DEBUG = ngx.DEBUG
 local ngx_ERR = ngx.ERR
@@ -36,7 +37,7 @@ local HOP_BY_HOP_HEADERS = {
     ["trailers"]            = true,
     ["transfer-encoding"]   = true,
     ["upgrade"]             = true,
-    ["content-length"]      = true, -- Not strictly hop-by-hop, but Nginx will deal 
+    ["content-length"]      = true, -- Not strictly hop-by-hop, but Nginx will deal
                                     -- with this (may send chunked for example).
 }
 
@@ -49,7 +50,7 @@ local HOP_BY_HOP_HEADERS = {
 --     ...
 --   end
 -- until not chunk
-local co_wrap = function(func) 
+local co_wrap = function(func)
     local co = co_create(func)
     if not co then
         return nil, "could not create coroutine"
@@ -66,8 +67,9 @@ end
 
 
 local _M = {
-    _VERSION = '0.05',
+    _VERSION = '0.07',
 }
+_M._USER_AGENT = "lua-resty-http/" .. _M._VERSION .. " (Lua) ngx_lua/" .. ngx.config.ngx_lua_version
 
 local mt = { __index = _M }
 
@@ -76,8 +78,6 @@ local HTTP = {
     [1.0] = " HTTP/1.0\r\n",
     [1.1] = " HTTP/1.1\r\n",
 }
-
-local USER_AGENT = "Resty/HTTP " .. _M._VERSION .. " (Lua)"
 
 local DEFAULT_PARAMS = {
     method = "GET",
@@ -138,7 +138,7 @@ function _M.set_keepalive(self, ...)
         return sock:setkeepalive(...)
     else
         -- The server said we must close the connection, so we cannot setkeepalive.
-        -- If close() succeeds we return 2 instead of 1, to differentiate between 
+        -- If close() succeeds we return 2 instead of 1, to differentiate between
         -- a normal setkeepalive() failure and an intentional close().
         local res, err = sock:close()
         if res then
@@ -179,7 +179,7 @@ end
 
 
 function _M.parse_uri(self, uri)
-    local m, err = ngx_re_match(uri, [[^(http[s]*)://([^:/]+)(?::(\d+))?(.*)]], 
+    local m, err = ngx_re_match(uri, [[^(http[s]*)://([^:/]+)(?::(\d+))?(.*)]],
         "jo")
 
     if not m then
@@ -196,7 +196,7 @@ function _M.parse_uri(self, uri)
                 m[3] = 80
             end
         end
-        if not m[4] then m[4] = "/" end
+        if not m[4] or "" == m[4] then m[4] = "/" end
         return m, nil
     end
 end
@@ -252,7 +252,6 @@ local function _receive_status(sock)
     if not line then
         return nil, nil, err
     end
-    ngx_log(ngx_DEBUG, "STATUS LINE:", line)
 
     return tonumber(str_sub(line, 10, 12)), tonumber(str_sub(line, 6, 8))
 end
@@ -264,12 +263,11 @@ local function _receive_headers(sock)
 
     repeat
         local line, err = sock:receive("*l")
-        if not line then 
+        if not line then
             return nil, err
         end
-        ngx_log(ngx_DEBUG, "HEADER:", line)
 
-        for key, val in str_gmatch(line, "([%w%-]+)%s*:%s*(.+)") do
+        for key, val in str_gmatch(line, "([^:%s]+):%s*(.+)") do
             if headers[key] then
                 if type(headers[key]) ~= "table" then
                     headers[key] = { headers[key] }
@@ -291,7 +289,7 @@ local function _chunked_body_reader(sock, default_chunk_size)
         local remaining = 0
         local length
 
-        repeat 
+        repeat
             -- If we still have data on this chunk
             if max_chunk_size and remaining > 0 then
 
@@ -304,7 +302,7 @@ local function _chunked_body_reader(sock, default_chunk_size)
                     length = remaining
                     remaining = 0
                 end
-            else -- This is a fresh chunk 
+            else -- This is a fresh chunk
 
                 -- Receive the chunk size
                 local str, err = sock:receive("*l")
@@ -317,7 +315,7 @@ local function _chunked_body_reader(sock, default_chunk_size)
                 if not length then
                     co_yield(nil, "unable to read chunksize")
                 end
-            
+
                 if max_chunk_size and length > max_chunk_size then
                     -- Consume up to max_chunk_size
                     remaining = length - max_chunk_size
@@ -330,7 +328,7 @@ local function _chunked_body_reader(sock, default_chunk_size)
                 if not str then
                     co_yield(nil, err)
                 end
-                
+
                 max_chunk_size = co_yield(str) or default_chunk_size
 
                 -- If we're finished with this chunk, read the carriage return.
@@ -357,10 +355,16 @@ local function _body_reader(sock, content_length, default_chunk_size)
             repeat
                 local str, err, partial = sock:receive(max_chunk_size)
                 if not str and err == "closed" then
-                    max_chunk_size = co_yield(partial, err) or default_chunk_size
+                    max_chunk_size = tonumber(co_yield(partial, err) or default_chunk_size)
                 end
 
-                max_chunk_size = co_yield(str) or default_chunk_size
+                max_chunk_size = tonumber(co_yield(str) or default_chunk_size)
+                if max_chunk_size and max_chunk_size < 0 then max_chunk_size = nil end
+
+                if not max_chunk_size then
+                    ngx_log(ngx_ERR, "Buffer size not specified, bailing")
+                    break
+                end
             until not str
 
         elseif not content_length then
@@ -385,11 +389,17 @@ local function _body_reader(sock, content_length, default_chunk_size)
                 if length > 0 then
                     local str, err = sock:receive(length)
                     if not str then
-                        max_chunk_size = co_yield(nil, err) or default_chunk_size
+                        max_chunk_size = tonumber(co_yield(nil, err) or default_chunk_size)
                     end
                     received = received + length
 
-                    max_chunk_size = co_yield(str) or default_chunk_size
+                    max_chunk_size = tonumber(co_yield(str) or default_chunk_size)
+                    if max_chunk_size and max_chunk_size < 0 then max_chunk_size = nil end
+
+                    if not max_chunk_size then
+                        ngx_log(ngx_ERR, "Buffer size not specified, bailing")
+                        break
+                    end
                 end
 
             until length == 0
@@ -406,7 +416,7 @@ end
 local function _read_body(res)
     local reader = res.body_reader
 
-    if not reader then 
+    if not reader then
         -- Most likely HEAD or 304 etc.
         return nil, "no body to be read"
     end
@@ -510,7 +520,7 @@ function _M.send_request(self, params)
             headers[k] = v
         end
     end
-    
+
     -- Ensure minimal headers are set
     if type(body) == 'string' and not headers["Content-Length"] then
         headers["Content-Length"] = #body
@@ -519,7 +529,7 @@ function _M.send_request(self, params)
         headers["Host"] = self.host
     end
     if not headers["User-Agent"] then
-        headers["User-Agent"] = USER_AGENT
+        headers["User-Agent"] = _M._USER_AGENT
     end
     if params.version == 1.0 and not headers["Connection"] then
         headers["Connection"] = "Keep-Alive"
@@ -575,7 +585,7 @@ function _M.read_response(self, params)
 
 
     local res_headers, err = _receive_headers(sock)
-    if not res_headers then 
+    if not res_headers then
         return nil, err
     end
 
@@ -615,9 +625,9 @@ function _M.read_response(self, params)
     if err then
         return nil, err
     else
-        return { 
-            status = status, 
-            headers = res_headers, 
+        return {
+            status = status,
+            headers = res_headers,
             has_body = has_body,
             body_reader = body_reader,
             read_body = _read_body,
@@ -652,7 +662,7 @@ function _M.request_pipeline(self, requests)
 
     local responses = {}
     for i, params in ipairs(requests) do
-        responses[i] = setmetatable({ 
+        responses[i] = setmetatable({
             params = params,
             response_read = false,
         }, {
@@ -709,48 +719,41 @@ function _M.request_uri(self, uri, params)
 
     local res, err = self:request(params)
     if not res then
-        local ok, err_close = self:close()
-        if not ok then
-            ngx_log(ngx_ERR, err_close)
-        end
         return nil, err
     end
 
     local body, err = res:read_body()
     if not body then
-        local ok, err_close = self:close()
-        if not ok then
-            ngx_log(ngx_ERR, err_close)
-        end
         return nil, err
     end
-    
+
     res.body = body
 
     local ok, err = self:set_keepalive()
     if not ok then
         ngx_log(ngx_ERR, err)
-        self:close()
-        return nil, err
     end
 
     return res, nil
 end
 
 
-function _M.get_client_body_reader(self, chunksize)
+function _M.get_client_body_reader(self, chunksize, sock)
     local chunksize = chunksize or 65536
-    local ok, sock, err = pcall(ngx_req_socket)
-
-    if not ok then
-        return nil, sock -- pcall err
-    end
-
     if not sock then
-        if err == "no body" then
-            return nil
-        else
-            return nil, err
+        local ok, err
+        ok, sock, err = pcall(ngx_req_socket)
+
+        if not ok then
+            return nil, sock -- pcall err
+        end
+
+        if not sock then
+            if err == "no body" then
+                return nil
+            else
+                return nil, err
+            end
         end
     end
 
@@ -771,7 +774,7 @@ end
 function _M.proxy_request(self, chunksize)
     return self:request{
         method = ngx_req_get_method(),
-        path = ngx_var.uri .. ngx_var.is_args .. (ngx_var.query_string or ""),
+        path = ngx_re_gsub(ngx_var.uri, "\\s", "%20", "jo") .. ngx_var.is_args .. (ngx_var.query_string or ""),
         body = self:get_client_body_reader(chunksize),
         headers = ngx_req_get_headers(),
     }
@@ -785,7 +788,7 @@ function _M.proxy_response(self, response, chunksize)
     end
 
     ngx.status = response.status
-    
+
     -- Filter out hop-by-hop headeres
     for k,v in pairs(response.headers) do
         if not HOP_BY_HOP_HEADERS[str_lower(k)] then
@@ -802,7 +805,11 @@ function _M.proxy_response(self, response, chunksize)
         end
 
         if chunk then
-            ngx.print(chunk)
+            local res, err = ngx.print(chunk)
+            if not res then
+                ngx_log(ngx_ERR, err)
+                break
+            end
         end
     until not chunk
 end

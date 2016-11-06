@@ -15,21 +15,6 @@ function _M.ifnull(var, value)
     return var
 end
 
-function _M.new_headers()
-    local t = {}
-    local lt = {}
-    local _mt = {
-        __index = function(t, k)
-            return rawget(lt, string.lower(k))
-        end,
-        __newindex = function(t, k, v)
-            rawset(t, k, v)
-            rawset(lt, string.lower(k), v)
-        end,
-     }
-    return setmetatable(t, _mt)
-end
-
 function _M.popen(cmd, filter)
     local fp = io.popen(cmd .. '; echo "retcode:$?"', "r")
     local line_reader = fp:lines()
@@ -154,71 +139,6 @@ function _M.is_domain(domain)
     return string.len(lastsec) < 5 and domain_suffix[lastsec] == 1
 end
 
-function _M.headerstr(headers)
-    if headers == nil or headers == {} then
-        return ""
-    end
-    local lines = {}
-    for k, v in pairs(headers) do
-        if type(v) == 'table' then
-            v = table.concat(v, ',')
-        end
-        if k ~= "User-Agent" then
-            table.insert(lines, "-H'" .. k .. ": " .. v .. "'");
-        end
-    end
-    return table.concat(lines, " ")
-end
-
-
-local function http_req(method, uri, body, myheaders, timeout)
-   if myheaders == nil then myheaders = _M.new_headers() end
-    if host ~= nil and myheaders["Host"] == nil then
-        myheaders["Host"] = host
-    end
-
-    local timeout_str = "-"
-    if timeout then
-        timeout_str = tostring(timeout)
-    end
-    local req_debug = ""
-    if method == "PUT" or method == "POST" then
-        local debug_body = nil
-        if string.len(body) < 1024 then
-            debug_body = body
-        else 
-            debug_body = string.sub(body, 1, 1024)
-        end
-        req_debug = "curl -v -X " .. method .. " " .. _M.headerstr(myheaders) .. " '" .. uri .. "' -d '" .. debug_body .. "' -o /dev/null"
-    else
-        body = nil
-        req_debug = "curl -v -X " .. method .. " " .. _M.headerstr(myheaders) .. " '" .. uri .. "' -o /dev/null"
-    end
-    ngx.log(ngx.INFO, method, " REQUEST [ ", req_debug, " ] timeout:", timeout_str)
-    local httpc = http.new()
-    if timeout then
-        httpc:set_timeout(timeout)
-    end
-    local begin = ngx.now()
-    local res, err = httpc:request_uri(uri, {method = method, headers = myheaders, body=body})
-    local cost = ngx.now()-begin
-    if not res then
-        ngx.log(ngx.ERR, "FAIL REQUEST [ ",req_debug, " ] err:", err, ", cost:", cost)
-    elseif res.status >= 400 then
-        ngx.log(ngx.ERR, "FAIL REQUEST [ ",req_debug, " ] status:", res.status, ", const:", cost)
-    end
-    return res, err, req_debug
-end
-
-function _M.http_get(uri, myheaders, timeout)
-    return http_req("GET", uri, nil, myheaders, timeout)
-end
-
-function _M.http_post(uri, body, myheaders, timeout)
-    return http_req("POST", uri, body, myheaders, timeout)
-end
-
-
 function _M.redirect(uri, args)
     local uri_and_args = uri 
     if args then
@@ -318,7 +238,7 @@ function _M.url_in_ignore_list(url)
 end
 
 function _M.make_pwd(password)
-    local pwd_str = config.password_magic or '#*nright@0Ol1llOO'
+    local pwd_str = config.password_magic or '#*pms@0Ol1llOO'
     pwd_str = pwd_str .. password
     return ngx.md5(pwd_str)
 end

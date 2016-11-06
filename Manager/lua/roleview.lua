@@ -6,12 +6,12 @@ local template = require "resty.template"
 local config = require("config")
 local permdao = require("dao.perm_dao")
 local roledao = require("dao.role_dao")
-local viewpub = require("Manager.lua.viewpub")
+local viewpub = require("viewpub")
 local json = require("util.json")
-local dwz = require("Manager.lua.dwzutil")
+local dwz = require("dwzutil")
 local util = require("util.util")
 local error = require('dao.error')
-local apputil = require("Manager.lua.apputil")
+local apputil = require("apputil")
 local tmpl_caching = config.tmpl_caching
 if tmpl_caching == nil then
 	tmpl_caching = false

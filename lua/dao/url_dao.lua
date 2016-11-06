@@ -29,10 +29,11 @@ function _M:new(connection)
 end
 
 function _M:list(app, page, page_size)
-    local sql_where = nil
+    local sql_where = ""
     if app then
         sql_where = "where app=" .. ngx.quote_sql_str(app)
     end
+    sql_where = sql_where .. " order by app asc, url asc"
     return self.dao:list(sql_where, page, page_size)
 end
 

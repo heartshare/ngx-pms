@@ -17,17 +17,17 @@ _M.ignore_list = {
 
 --[[
 -- 登录URL。
-_M.login_url =  "/nright/login"
+_M.login_url =  "/pms/login"
 -- 权限检查URL
-_M.right_check_url = "/nright/right_check"
+_M.right_check_url = "/pms/right_check"
 -- 没权限时，显示的页面
-_M.no_access_page = "/nright/no_access_page"
+_M.no_access_page = "/pms/no_access_page"
 -- 信息栏地址。
-_M.infobar_page = "/nright/infobar"
+_M.infobar_page = "/pms/infobar"
 
 ]]
 -- Cookie 设置相关参数。
-_M.cookie_config = {key="nright", path="/", expires=3600}
+_M.cookie_config = {key="pms", path="/", expires=3600}
 
 -- 数据库配置。
 _M.db = {host="127.0.0.1", port=3306,user="root", password="123456",
@@ -37,7 +37,7 @@ _M.db = {host="127.0.0.1", port=3306,user="root", password="123456",
 _M.defNumPerPage = 15
 
 -- Password加密使用的盐，在系统使用之前修改，系统开始使用后，请不要修改。
-_M.password_magic = '#*nright@0Ol1llOO'
+_M.password_magic = '#*pms@0Ol1llOO'
 
 _M.sql_debug = true
 

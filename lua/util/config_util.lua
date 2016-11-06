@@ -124,35 +124,11 @@ local function read_content(filename)
     end
 end
 
-local function read_userinfo(filename)
-    local userinfo = nil
-    local ok, lines = read_content(filename)
-    if ok then
-        userinfo = {username='test', password=''}
-        for i, line in ipairs(lines) do 
-            if not startswith(line, "#") then
-                local arr = split(line, ":")
-                if #arr == 1 then
-                    userinfo.username = trim(arr[1])
-                elseif #arr == 2 then
-                    userinfo.username = trim(arr[1])
-                    userinfo.password = trim(arr[2]) or ''
-                else 
-                    ngx.log(ngx.ERR, " invalid line [", line, "] in file:", filename)
-                end
-            end
-        end
-    else
-        userinfo = lines
-    end
-    return ok, userinfo
-end
-
 function _M.init_from_ext_config(config)
     config.hostname = _M.gethostname()
     -- local hostname = config.hostname
     -- ngx.log(ngx.WARN, "# hostname:", hostname)
-    package.path = '/opt/leo_cfg/?.lua;' .. package.path
+    package.path = '/opt/lua_cfg/?.lua;' .. package.path
 
     local ext_config_file = config.ext_config or 'ext_config'
     -- ngx.log(ngx.WARN, "--- ext_config_file:", tostring(ext_config_file))

@@ -65,7 +65,7 @@ id varchar(64) primary key comment '字符串类型的角色ID',
 name varchar(64) not null comment '权限名称',
 remark varchar(128) null comment '备注说明',
 app varchar(64) not null comment '应用标识',
-permission varchar(4096) null comment '权限列表，使用|分割',
+permission varchar(8192) null comment '权限列表，使用|分割',
 create_time integer unsigned comment '创建时间',
 update_time integer unsigned comment '修改时间',
 unique key(name)
@@ -74,7 +74,7 @@ unique key(name)
 create table `user_permission` (
 userid integer not null comment '用户ID',
 app varchar(64) not null comment '应用标识',
-permission varchar(4096) null comment '权限列表，使用|分割',
+permission varchar(8192) null comment '权限列表，使用|分割',
 create_time integer unsigned comment '创建时间',
 update_time integer unsigned comment '修改时间',
 primary key(userid, app)

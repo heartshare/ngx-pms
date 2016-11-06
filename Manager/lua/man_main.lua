@@ -5,15 +5,15 @@ date: 20151014
 
 local template = require "resty.template"
 local config = require("config")
-local app = require("Manager.lua.appview")
-local user = require("Manager.lua.userview")
-local perm = require("Manager.lua.permview")
-local role = require("Manager.lua.roleview")
-local url = require("Manager.lua.urlview")
-local login = require("Manager.lua.login")
-local dwz = require("Manager.lua.dwzutil")
+local app = require("appview")
+local user = require("userview")
+local perm = require("permview")
+local role = require("roleview")
+local url = require("urlview")
+local login = require("login")
+local dwz = require("dwzutil")
 local util = require("util.util")
-local apputil = require("Manager.lua.apputil")
+local apputil = require("apputil")
 
 local tmpl_caching = config.tmpl_caching
 if tmpl_caching == nil then

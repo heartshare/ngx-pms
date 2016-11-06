@@ -59,7 +59,7 @@ function _M.filter(arg)
 	ngx.log(ngx.INFO, " ############# ngx.var.app:", tostring(ngx.var.app))
 	
 	local app = args.app or ngx.var.app or "def"
-	local do_replace = ngx.ctx.topbar_added or ngx.var.uri == "/nright/no_access_page"
+	local do_replace = ngx.ctx.topbar_added or ngx.var.uri == "/pms/no_access_page"
 	ngx.log(ngx.INFO, "app:", app, ", do_replace:", do_replace)
 
 	if do_replace and app == 'w3school' then 

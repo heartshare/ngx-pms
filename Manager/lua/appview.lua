@@ -8,11 +8,11 @@ local appdao = require("dao.app_dao")
 local userdao = require('dao.user_dao')
 local mysql = require("dao.mysql_util").get_mysql_mgr()
 local json = require("util.json")
-local dwz = require("Manager.lua.dwzutil")
+local dwz = require("dwzutil")
 local util = require("util.util")
 local error = require('dao.error')
 local cookiedao = require("dao.cookie_dao")
-local apputil = require("Manager.lua.apputil")
+local apputil = require("apputil")
 
 local tmpl_caching = config.tmpl_caching
 if tmpl_caching == nil then

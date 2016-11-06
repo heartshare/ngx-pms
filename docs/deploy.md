@@ -1,34 +1,34 @@
 
-#ÏÈ¾öÌõ¼ş 
-* °²×°MYSQL
-* °²×°OpenResty
+#å…ˆå†³æ¡ä»¶ 
+* å®‰è£…MYSQL
+* å®‰è£…OpenResty
 
-# Ä¿Â¼
-* [°²×°](#°²×°)
-    * [Êı¾İ¿â³õÊ¼»¯](#Êı¾İ¿â³õÊ¼»¯)
-    * [·şÎñ²¿Êğ](#·şÎñ²¿Êğ)
-    * [Ìí¼Ó¸ùÕÊºÅ](#Ìí¼Ó¸ùÕÊºÅ)
-* [Ê¹ÓÃ¹ÜÀíºóÌ¨](#Ê¹ÓÃ¹ÜÀíºóÌ¨)
-* [²¿ÊğÈ¨ÏŞ´úÀí](#²¿ÊğÈ¨ÏŞ´úÀí)
-* [·ÃÎÊÓ¦ÓÃ²¢µÇÂ¼](#·ÃÎÊÓ¦ÓÃ²¢µÇÂ¼)
-* [°Ù¶È°Ù¿ÆÅäÖÃÊ¾Àı](demo_baike/README.md)
+# ç›®å½•
+* [å®‰è£…](#å®‰è£…)
+    * [æ•°æ®åº“åˆå§‹åŒ–](#æ•°æ®åº“åˆå§‹åŒ–)
+    * [æœåŠ¡éƒ¨ç½²](#æœåŠ¡éƒ¨ç½²)
+    * [æ·»åŠ æ ¹å¸å·](#æ·»åŠ æ ¹å¸å·)
+* [ä½¿ç”¨ç®¡ç†åå°](#ä½¿ç”¨ç®¡ç†åå°)
+* [éƒ¨ç½²æƒé™ä»£ç†](#éƒ¨ç½²æƒé™ä»£ç†)
+* [è®¿é—®åº”ç”¨å¹¶ç™»å½•](#è®¿é—®åº”ç”¨å¹¶ç™»å½•)
+* [ç™¾åº¦ç™¾ç§‘é…ç½®ç¤ºä¾‹](demo_baike/README.md)
 
-# °²×°
+# å®‰è£…
 -------
-#### Êı¾İ¿â³õÊ¼»¯
-* ÏÈ´´½¨Êı¾İ¿â£¬`½øÈëmysqlÃüÁîĞĞ£¬Ö´ĞĞÒÔÏÂÃüÁî£º`
+#### æ•°æ®åº“åˆå§‹åŒ–
+* å…ˆåˆ›å»ºæ•°æ®åº“ï¼Œ`è¿›å…¥mysqlå‘½ä»¤è¡Œï¼Œæ‰§è¡Œä»¥ä¸‹å‘½ä»¤ï¼š`
 
 ```shell
 create database pms character set utf8;
 use pms;
 ```
 
-* Ö´ĞĞ½Å±¾´´½¨±í½á¹¹£º
+* æ‰§è¡Œè„šæœ¬åˆ›å»ºè¡¨ç»“æ„ï¼š
 
 ```shell
 source /path/to/ngx-pms/docs/scripts/db.sql
 ```
-Èç¹ûÖ´ĞĞ³É¹¦£¬Ó¦¸Ã´´½¨ÁËÈçÏÂ¼¸ÕÅ±í£º
+å¦‚æœæ‰§è¡ŒæˆåŠŸï¼Œåº”è¯¥åˆ›å»ºäº†å¦‚ä¸‹å‡ å¼ è¡¨ï¼š
 ```mysql
 mysql> show tables;
 +-----------------+
@@ -44,34 +44,39 @@ mysql> show tables;
 6 rows in set (0.00 sec)
 ```
 
-#### ·şÎñ²¿Êğ
-* nginx.confÅäÖÃ
+#### æœåŠ¡éƒ¨ç½²
+* nginx.confé…ç½®(å¯ç›´æ¥ä½¿ç”¨ngx-pms/conf/nginx.conf,å¹¶ä¿®æ”¹å…¶ä¸­æ–‡ä»¶è·¯å¾„)
 
 ```nginx
-    #±£´æcookieµÄ¹²ÏíÄÚ´æ¡£
+    #ä¿å­˜cookieä¿¡æ¯çš„å…±äº«å†…å­˜ã€‚
     lua_shared_dict cookies 5m;
-    lua_package_path "/path/to/ngx-pms/?.lua;;";
-    # ngx-pmsÊÚÈ¨½Ó¿Ú
+    #å…¶å®ƒä¿¡æ¯çš„ç¼“å­˜
+    lua_shared_dict cache 2m;
+    # æ–‡ä»¶è·¯å¾„åŒ…å«ï¼Œåˆ†åˆ«æ˜¯ï¼šé¡¹ç›®ï¼Œä¾èµ–åº“ï¼ŒåŠmanagerçš„æ–‡ä»¶ã€‚
+    lua_package_path "/path/to/ngx-pms/lua/?.lua;/path/to/ngx-pms/libs/?.lua;/path/to/ngx-pms/manager/lua/?.lua;;";
+
+    # ngx-pmsæˆæƒæ¥å£
     server {
         listen 8000;
         set $template_root /path/to/ngx-pms/tmpl;
 
-        location /nright/ {
-            content_by_lua_file /path/to/ngx-pms/server/nright_main.lua;
+        location /pms/ {
+            content_by_lua_file /path/to/ngx-pms/lua/server/pms_main.lua;
         }
     }
 
-    # ngx-pms¹ÜÀíºóÌ¨¡£
+    # ngx-pmsç®¡ç†åå°ã€‚
     server {
         listen 8001;
-        set $template_root /path/to/ngx-pms/Manager/templates;
+        set $template_root /path/to/ngx-pms/manager/templates;
 
         location / {
-            content_by_lua_file /path/to/ngx-pms/Manager/lua/main.lua;
+            content_by_lua_file /path/to/ngx-pms/manager/lua/man_main.lua;
+            log_by_lua_file /path/to/ngx-pms/manager/lua/clean_cache.lua;
         }
 
         location /static {
-            root /path/to/ngx-pms/Manager;
+            root /path/to/ngx-pms/manager;
         }
 
         location = /password {
@@ -85,36 +90,41 @@ mysql> show tables;
     }
 ```
 
-* config.luaÅäÖÃ
+* config.luaé…ç½®
 
 ```lua
--- ÉÏÃæ²¿·ÖÊ¡ÂÔ¡£
--- Cookie ÉèÖÃÏà¹Ø²ÎÊı¡£
-_M.cookie_config = {key="nright", path="/", expires=3600}
+-- ä¸Šé¢éƒ¨åˆ†çœç•¥ã€‚
 
--- Êı¾İ¿âÅäÖÃ¡£
+-- Cookie è®¾ç½®ç›¸å…³å‚æ•°ã€‚
+_M.cookie_config = {key="pms", path="/", expires=3600}
+
+-- æ•°æ®åº“é…ç½®ã€‚
 _M.db = {host="127.0.0.1", port=3306,user="root", password="123456",
 		database="pms",DEFAULT_CHARSET="utf8"}
 
--- ÁĞ±íÏÔÊ¾Ê±£¬Ä¬ÈÏ·ÖÒ³´óĞ¡
+-- åˆ—è¡¨æ˜¾ç¤ºæ—¶ï¼Œé»˜è®¤åˆ†é¡µå¤§å°
 _M.defNumPerPage = 15
 
--- Password¼ÓÃÜÊ¹ÓÃµÄÑÎ£¬ÔÚÏµÍ³Ê¹ÓÃÖ®Ç°ĞŞ¸Ä£¬ÏµÍ³¿ªÊ¼Ê¹ÓÃºó£¬Çë²»ÒªĞŞ¸Ä¡£
-_M.password_magic = '#*nright@0Ol1llOO'
+-- PasswordåŠ å¯†ä½¿ç”¨çš„ç›ï¼Œåœ¨ç³»ç»Ÿä½¿ç”¨ä¹‹å‰ä¿®æ”¹ï¼Œç³»ç»Ÿå¼€å§‹ä½¿ç”¨åï¼Œè¯·ä¸è¦ä¿®æ”¹ã€‚
+_M.password_magic = '#*pms@0Ol1llOO'
 ```
-Ö÷ÒªĞèÒªĞŞ¸Ä_M.dbÖĞµÄÊı¾İ¿â²¿·Ö¡£
-ÏµÍ³³õÊ¼»¯Ê±£¬ĞèÒªĞŞ¸Ä_M.password_magic²¿·Ö¡£
+ä¸»è¦éœ€è¦ä¿®æ”¹_M.dbä¸­çš„æ•°æ®åº“éƒ¨åˆ†ã€‚
+ç³»ç»Ÿåˆå§‹åŒ–æ—¶ï¼Œéœ€è¦ä¿®æ”¹_M.password_magicéƒ¨åˆ†ã€‚
 
-* Æô¶¯nginx<br/>
-nginxÆô¶¯ºó£¬¾Í¿ÉÒÔ·ÃÎÊ¹ÜÀíºóÌ¨À´¶ÔÏµÍ³½øĞĞ¹ÜÀíÁË£¬µ«ÓÉÓÚ»¹Ã»ÓĞÕÊºÅ£¬ÎŞ·¨µÇÂ¼£¬Çë°´ÕÕÏÂÃæµÄ²½ÖèÉú³ÉÃÜÂë£¬²¢Ìí¼ÓrootÕÊºÅ£º
+* å¯åŠ¨nginx
+```
+nginx -c /path/to/ngx-pms/conf/nginx.conf 
+```
 
-#### Ìí¼Ó¸ùÕÊºÅ
-* ÔÚ²¿ÊğµÄ·şÎñÆ÷ÉÏ£¬Ê¹ÓÃÏÂÃæµÄÃüÁîÉú³É¼ÓÃÜµÄÃÜÂë£º<br/>
+nginxå¯åŠ¨åï¼Œå°±å¯ä»¥è®¿é—®ç®¡ç†åå°æ¥å¯¹ç³»ç»Ÿè¿›è¡Œç®¡ç†äº†ï¼Œä½†ç”±äºè¿˜æ²¡æœ‰å¸å·ï¼Œæ— æ³•ç™»å½•ï¼Œè¯·æŒ‰ç…§ä¸‹é¢çš„æ­¥éª¤ç”Ÿæˆå¯†ç ï¼Œå¹¶æ·»åŠ rootå¸å·ï¼š
+
+#### æ·»åŠ æ ¹å¸å·
+* åœ¨éƒ¨ç½²çš„æœåŠ¡å™¨ä¸Šï¼Œä½¿ç”¨ä¸‹é¢çš„å‘½ä»¤ç”ŸæˆåŠ å¯†çš„å¯†ç ï¼š<br/>
 `curl http://127.0.0.1:8001/password?password=password-of-root`<br/>
-Èç¹ûÖ´ĞĞ³É¹¦£¬»á·µ»ØÒ»¸ö40Î»µÄÃÜÂë£¬ÀàËÆ£º`4b3fc94423693eab92d632688037f9d2`<br/>
-Èç¹û³ö´í£¬Çë²é¿´´íÎóÈÕÖ¾£¬À´ÏÂ¶¨Î»ÎÊÌâËùÔÚ¡£
-* Ê¹ÓÃ¸ÃÉú³ÉµÄÃÜÂëÌæ»»ÏÂÃæµÄ${password}£¬È»ºóÔÚÊı¾İ¿âÖĞÖ´ĞĞ£º<br/>
-Ä£°æÎª£º
+å¦‚æœæ‰§è¡ŒæˆåŠŸï¼Œä¼šè¿”å›ä¸€ä¸ª40ä½çš„å¯†ç ï¼Œç±»ä¼¼ï¼š`32a8fbbe6412045fb333bcfe1785adff`<br/>
+å¦‚æœå‡ºé”™ï¼Œè¯·æŸ¥çœ‹é”™è¯¯æ—¥å¿—ï¼Œæ¥ä¸‹å®šä½é—®é¢˜æ‰€åœ¨ã€‚
+* ä½¿ç”¨è¯¥ç”Ÿæˆçš„å¯†ç æ›¿æ¢ä¸‹é¢çš„${password}ï¼Œç„¶ååœ¨æ•°æ®åº“ä¸­æ‰§è¡Œï¼š<br/>
+æ¨¡ç‰ˆä¸ºï¼š
 
 ```sql
 insert into user(username,email,tel,password,app,manager, role_id,create_time, update_time)
@@ -122,88 +132,97 @@ values('root', 'jie123108@163.com', '13380333333', '${password}',
 'all', 'super', '',unix_timestamp(), unix_timestamp());
 ```
 
-Ìæ»»ºóÎª£º<br/>
+æ›¿æ¢åä¸ºï¼ˆè¯·ä¸è¦ä½¿ç”¨æœ¬ç¤ºä¾‹ä¸­çš„sqlï¼‰ï¼š
 
 ```sql
 insert into user(username,email,tel,password,app,manager, role_id,create_time, update_time)
-values('root', 'jie123108@163.com', '13380333333', '4b3fc94423693eab92d632688037f9d2',
+values('root', 'jie123108@163.com', '13380333333', '32a8fbbe6412045fb333bcfe1785adff',
 'all', 'super', '',unix_timestamp(), unix_timestamp());
 ```
 
-* Ìí¼ÓºÃÕÊºÅºó,¾Í¿ÉÒÔ·ÃÎÊ¹ÜÀíºóÌ¨£¬¶ÔÕû¸öÏµÍ³½øĞĞ¹ÜÀíÁË¡£
+* æ·»åŠ å¥½å¸å·å,å°±å¯ä»¥è®¿é—®ç®¡ç†åå°ï¼Œå¯¹æ•´ä¸ªç³»ç»Ÿè¿›è¡Œç®¡ç†äº†ã€‚
 
-# Ê¹ÓÃ¹ÜÀíºóÌ¨
+# ä½¿ç”¨ç®¡ç†åå°
 --------
-* ·ÃÎÊ¸Õ²Å²¿ÊğµÄ¹ÜÀíºóÌ¨·şÎñ `http://192.168.1.xx:8001/`
- ![µÇÂ¼](login.png)
-* ÊäÈëroot¼°ÄãÉèÖÃµÄÃÜÂë£¬¾Í¿ÉÒÔµÇÂ¼³É¹¦ÁË¡£½øÈ¥ºó£¬½çÃæ´óÖÂÈçÏÂ£º
- ![Ö÷½çÃæ](default.png)
-* µã»÷ÏàÓ¦µÄ²Ëµ¥£¬¾ÍÄÜ½øĞĞÏàÓ¦µÄ¹ÜÀíÁË¡£
+* è®¿é—®åˆšæ‰éƒ¨ç½²çš„ç®¡ç†åå°æœåŠ¡ `http://192.168.1.xx:8001/`
+ ![ç™»å½•](login.png)
+* è¾“å…¥rootåŠä½ è®¾ç½®çš„å¯†ç ï¼Œå°±å¯ä»¥ç™»å½•æˆåŠŸäº†ã€‚è¿›å»åï¼Œç•Œé¢å¤§è‡´å¦‚ä¸‹ï¼š
+ ![ä¸»ç•Œé¢](default.png)
+* ç‚¹å‡»ç›¸åº”çš„èœå•ï¼Œå°±èƒ½è¿›è¡Œç›¸åº”çš„ç®¡ç†äº†ã€‚
 
-# ²¿ÊğÈ¨ÏŞ´úÀí
+# éƒ¨ç½²æƒé™ä»£ç†
 --------------
-È¨ÏŞ´úÀí£¨pms-agent£©ÊÇĞèÒª²¿ÊğÔÚÒª¹ÜÀíµÄÓ¦ÓÃµÄ·´Ïò´úÀínginxÉÏÃæ£º
+æƒé™ä»£ç†ï¼ˆpms-agentï¼‰æ˜¯éœ€è¦éƒ¨ç½²åœ¨è¦ç®¡ç†çš„åº”ç”¨çš„åå‘ä»£ç†nginxä¸Šé¢ï¼š
 
-#### nginx.confÅäÖÃ
+#### nginx.confé…ç½®(å¯å‚è€ƒngx-pms/conf/pms-agent.conf,å¹¶ä¿®æ”¹å…¶ä¸­æ–‡ä»¶è·¯å¾„)
 ```nginx
-lua_package_path "/path/to/ngx-pms/?.lua;;";
-server {
-    listen       80 default; 
+    #ä¿å­˜cookieä¿¡æ¯çš„å…±äº«å†…å­˜ã€‚
+    lua_shared_dict cookies 5m;
+    #å…¶å®ƒä¿¡æ¯çš„ç¼“å­˜
+    lua_shared_dict cache 2m;
+    # æ–‡ä»¶è·¯å¾„åŒ…å«ï¼Œåˆ†åˆ«æ˜¯ï¼šé¡¹ç›®ï¼Œä¾èµ–åº“ï¼ŒåŠmanagerçš„æ–‡ä»¶ã€‚
+    lua_package_path "/path/to/ngx-pms/lua/?.lua;/path/to/ngx-pms/libs/?.lua;/path/to/ngx-pms/manager/lua/?.lua;;";
 
-    # ´úÀíµ½ngx-pms·şÎñÉÏ¡£
-    location /nright {
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header REMOTE-HOST $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header Accept-Encoding "";
-        client_max_body_size 50m;
-        client_body_buffer_size 256k;
-        proxy_connect_timeout 10;
-        proxy_send_timeout 10;
-        proxy_read_timeout 10;
-        proxy_buffer_size 256k;
-        proxy_buffers 4 256k;
-        proxy_busy_buffers_size 256k;
-        proxy_temp_file_write_size 256k;
-        proxy_max_temp_file_size 128m;
-        # Ö¸Ïòµ½¸Õ²¿ÊğµÄ·şÎñÉÏ¡£
-        proxy_pass    http://127.0.0.1:8000;
+    # pms-agentæƒé™ä»£ç†(å¯ä»¥ä¸â€œpmsæˆæƒæ¥å£â€éƒ¨ç½²åœ¨ä¸€ä¸ªnginxä¸Šï¼Œä¹Ÿå¯ä»¥åˆ†å¼€éƒ¨ç½²)
+    # ç¤ºä¾‹é…ç½®(www.w3school.com.cn)
+    server {
+        listen       80 default;
+        listen       1200 default;
+        server_name www.w3school.com.cn;
+
+        # ä»¥/pmså¼€å¤´çš„è¯·æ±‚ï¼Œéœ€è¦ä»£ç†åˆ°â€œpmsæˆæƒæ¥å£â€
+        location /pms {
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header REMOTE-HOST $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header Accept-Encoding "";
+            client_max_body_size 5m;
+            client_body_buffer_size 256k;
+            proxy_connect_timeout 10;
+            proxy_send_timeout 10;
+            proxy_read_timeout 10;
+            proxy_buffer_size 256k;
+            proxy_buffers 4 256k;
+            proxy_busy_buffers_size 256k;
+            proxy_temp_file_write_size 256k;
+            proxy_max_temp_file_size 128m;
+            # è¿™é‡Œè¦å†™â€œpmsæˆæƒæ¥å£â€çš„åœ°å€ã€‚
+            proxy_pass    http://127.0.0.1:8000;
+        }
+        # æ¸…é™¤å“åº”ä½“å¤§å°ã€‚
+        header_filter_by_lua ' ngx.header.content_length = nil '; 
+        # è¿‡æ»¤å™¨ï¼Œåœ¨ç›¸åº”é¡µé¢ï¼ŒåŠ ä¸Šä¿¡æ¯æ¡ã€‚
+        body_filter_by_lua_file /path/to/ngx-pms/lua/agent/body_filter.lua;
+        
+        # åº”ç”¨çš„åå‘ä»£ç†è®¾ç½®ã€‚
+        location / {
+            # $appå˜é‡çš„å€¼ï¼Œå¿…é¡»æ˜¯å·²ç»åœ¨ç®¡ç†åå°ä¸Šå·²ç»æ·»åŠ æˆåŠŸçš„åº”ç”¨ID.
+            set $app w3school;
+            # æƒé™æ£€æŸ¥çš„è„šæœ¬ã€‚
+            access_by_lua_file /path/to/ngx-pms/lua/agent/permission_check.lua;
+
+            proxy_set_header Host www.w3school.com.cn;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header REMOTE-HOST $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header Accept-Encoding "";
+            client_max_body_size 5m;
+            client_body_buffer_size 256k;
+            proxy_connect_timeout 10;
+            proxy_send_timeout 10;
+            proxy_read_timeout 10;
+            proxy_buffer_size 256k;
+            proxy_buffers 4 256k;
+            proxy_busy_buffers_size 256k;
+            proxy_temp_file_write_size 256k;
+            proxy_max_temp_file_size 128m;
+            # åº”ç”¨çš„å®é™…åœ°å€ã€‚
+            proxy_pass    http://www.w3school.com.cn;
+        }
     }
-
-    # Çå³ıÏìÓ¦Ìå´óĞ¡¡£
-    header_filter_by_lua ' ngx.header.content_length = nil '; 
-    # ¹ıÂËÆ÷£¬ÔÚÏàÓ¦Ò³Ãæ£¬¼ÓÉÏĞÅÏ¢Ìõ¡£
-    body_filter_by_lua_file /path/to/ngx-pms/agent/body_filter.lua;
-    
-    # Ó¦ÓÃµÄ·´Ïò´úÀíÉèÖÃ¡£
-    location / {
-        # $app±äÁ¿µÄÖµ£¬±ØĞëÊÇÒÑ¾­ÔÚ¹ÜÀíºóÌ¨ÉÏÒÑ¾­Ìí¼Ó³É¹¦µÄÓ¦ÓÃID.
-        set $app app_id;
-        # È¨ÏŞ¼ì²éµÄ½Å±¾¡£
-        access_by_lua_file /path/to/ngx-pms/agent/right_check.lua;
-
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header REMOTE-HOST $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header Accept-Encoding "";
-        client_max_body_size 50m;
-        client_body_buffer_size 256k;
-        proxy_connect_timeout 10;
-        proxy_send_timeout 10;
-        proxy_read_timeout 10;
-        proxy_buffer_size 256k;
-        proxy_buffers 4 256k;
-        proxy_busy_buffers_size 256k;
-        proxy_temp_file_write_size 256k;
-        proxy_max_temp_file_size 128m;
-        # Ó¦ÓÃµÄÊµ¼ÊµØÖ·¡£
-        proxy_pass    http://xx.xx.xx.xx:80;
-    }
- }
 ```
 
-# ·ÃÎÊÓ¦ÓÃ²¢µÇÂ¼
+# è®¿é—®åº”ç”¨å¹¶ç™»å½•
 ------
-·ÃÎÊÓ¦ÓÃºó£¬»áÌáÊ¾µÇÂ¼£¬ÄãÊ¹ÓÃÔÚ¹ÜÀíºóÌ¨ÖĞÌí¼ÓµÄÓÃ»§ÕÊºÅµÇÂ¼£¬¾Í¿ÉÒÔ·ÃÎÊÏàÓ¦¾ßÓĞÈ¨ÏŞµÄÒ³ÃæÁË¡£
+è®¿é—®åº”ç”¨åï¼Œä¼šæç¤ºç™»å½•ï¼Œä½ ä½¿ç”¨åœ¨ç®¡ç†åå°ä¸­æ·»åŠ çš„ç”¨æˆ·å¸å·ç™»å½•ï¼Œå°±å¯ä»¥è®¿é—®ç›¸åº”å…·æœ‰æƒé™çš„é¡µé¢äº†ã€‚

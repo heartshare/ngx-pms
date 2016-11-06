@@ -1,7 +1,7 @@
 local appdao = require("dao.app_dao")
 local permdao = require('dao.perm_dao')
 local error = require('dao.error')
-local apputil = require("Manager.lua.apputil")
+local apputil = require("apputil")
 
 local _M = {}
 

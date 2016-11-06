@@ -34,7 +34,7 @@ function _M.get_cookie()
         return nil
     end
 
-    local cookie_key = "nright"
+    local cookie_key = "pms"
     if config.cookie_config and config.cookie_config.key then
     	cookie_key = config.cookie_config.key
     end
@@ -48,7 +48,7 @@ function _M.set_cookie(value)
 	if config.cookie_config == nil then
 		return false
 	end
-    local key = "nright"
+    local key = "pms"
     if config.cookie_config and config.cookie_config.key then
     	key = config.cookie_config.key
     end
